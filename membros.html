@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Equipe - IASD</title>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <style>
+        :root { --iasd-blue: #003366; --iasd-light: #f4f7f9; --success: #22c55e; --danger: #dc2626; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--iasd-light); margin: 0; padding-bottom: 50px; }
+        header { background: var(--iasd-blue); color: white; padding: 15px; text-align: center; font-size: 1.2rem; font-weight: bold; }
+        .container { padding: 15px; max-width: 600px; margin: auto; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        h3 { color: var(--iasd-blue); margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        label { display: block; font-weight: bold; margin: 15px 0 5px; color: #555; font-size: 0.9rem; }
+        input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        .dias-grid { display: flex; justify-content: space-between; gap: 5px; margin-top: 10px; }
+        .dia-btn { flex: 1; height: 35px; border-radius: 6px; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold; background: white; font-size: 11px; }
+        .dia-btn.active { background: var(--success); color: white; border-color: var(--success); }
+        .btn-main { width: 100%; padding: 15px; background: var(--iasd-blue); color: white; border: none; border-radius: 8px; font-weight: bold; margin-top: 20px; font-size: 1rem; cursor: pointer; }
+        .btn-del { color: var(--danger); background: none; border: none; font-size: 1.2rem; cursor: pointer; }
+        .back-link { display: inline-block; margin-bottom: 15px; text-decoration: none; color: var(--iasd-blue); font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<header id="headerTitle">⛪ Gestão de Departamentos</header>
+
+<div class="container">
+    <a href="index.html" class="back-link">← Voltar ao Menu</a>
+
+    <div class="card">
+        <h3>Adicionar ao Departamento</h3>
+        
+        <label>Nome do Voluntário:</label>
+        <input type="text" id="buscaMembro" list="membrosData" placeholder="Digite o nome...">
+        <datalist id="membrosData"></datalist>
+
+        <label>Departamento Selecionado:</label>
+        <div id="displayDepto" style="font-weight: bold; color: var(--iasd-blue); padding: 12px; background: #eef2f7; border-radius: 8px;"></div>
+
+        <button class="btn-main" onclick="vincularAoDepartamento()">+ Vincular Membro</button>
+    </div>
+
+    <div class="card">
+        <h3>Equipe Escalável</h3>
+        <div id="listaVinculados">Carregando membros...</div>
+    </div>
+</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyBYtUnqsokLE1RnK1TGbswbnsLXPpvvdc0",
+        authDomain: "escala7igreja.firebaseapp.com",
+        databaseURL: "https://escala7igreja-default-rtdb.firebaseio.com",
+        projectId: "escala7igreja",
+        storageBucket: "escala7igreja.firebasestorage.app",
+        messagingSenderId: "778312493987",
+        appId: "1:778312493987:web:2851b2fc65331e4ac14816"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const deptoLogado = urlParams.get('depto'); 
+
+    if (!deptoLogado) { window.location.href = "index.html"; }
+
+    let membrosBaseGeral = {};
+
+    function carregarMembrosFirebase() {
+        db.ref('membros').on('value', (snapshot) => {
+            const datalist = document.getElementById('membrosData');
+            datalist.innerHTML = "";
+            membrosBaseGeral = snapshot.val() || {};
+            
+            for (let id in membrosBaseGeral) {
+                const m = membrosBaseGeral[id];
+                let opt = document.createElement('option');
+                
+                // Aqui voltamos a exibir o Nome de Exibição para facilitar a pesquisa
+                const labelExibicao = m.nomeExibicao ? ` (${m.nomeExibicao})` : "";
+                opt.value = m.nomeCompleto; // O valor enviado ainda é o nome completo
+                opt.label = labelExibicao;   // O navegador mostra o rótulo ao lado
+                
+                datalist.appendChild(opt);
+            }
+        });
+    }
+
+    function vincularAoDepartamento() {
+        const nomeDigitado = document.getElementById('buscaMembro').value.trim();
+        let idOriginal = null;
+        let infoMembro = null;
+
+        // Procura na base o objeto que corresponde ao nome completo digitado
+        for (let id in membrosBaseGeral) {
+            if (membrosBaseGeral[id].nomeCompleto === nomeDigitado) {
+                idOriginal = id;
+                infoMembro = membrosBaseGeral[id];
+                break;
+            }
+        }
+
+        if (!idOriginal) {
+            alert("⚠️ Selecione um nome válido da lista de sugestões!");
+            return;
+        }
+
+        const novoVinculo = {
+            membroId: idOriginal,
+            nomeCompleto: infoMembro.nomeCompleto,
+            nomeExibicao: infoMembro.nomeExibicao || infoMembro.nomeCompleto,
+            departamento: deptoLogado,
+            disponibilidade: ["0", "1", "2", "3", "4", "5", "6"]
+        };
+
+        db.ref('equipes_deptos').push(novoVinculo).then(() => {
+            document.getElementById('buscaMembro').value = "";
+            alert(`✅ ${infoMembro.nomeExibicao || infoMembro.nomeCompleto} vinculado ao ${deptoLogado}!`);
+        });
+    }
+
+    function listarEquipes() {
+        db.ref('equipes_deptos').orderByChild('departamento').equalTo(deptoLogado).on('value', (snapshot) => {
+            const div = document.getElementById('listaVinculados');
+            div.innerHTML = "";
+            
+            if (!snapshot.exists()) {
+                div.innerHTML = `<p style="text-align:center; color:#999;">Nenhum membro vinculado a ${deptoLogado}.</p>`;
+                return;
+            }
+
+            snapshot.forEach(item => {
+                const d = item.val();
+                const chave = item.key;
+                const dias = d.disponibilidade || [];
+                const nomesDias = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+                
+                let botoesHtml = '';
+                nomesDias.forEach((n, i) => {
+                    const ativo = dias.includes(i.toString()) ? 'active' : '';
+                    botoesHtml += `<div class="dia-btn ${ativo}" onclick="alternarDia('${chave}', '${i}')">${n}</div>`;
+                });
+
+                div.innerHTML += `
+                    <div class="card" style="padding:12px; margin-bottom:10px; border-left: 5px solid var(--iasd-blue);">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <strong>${d.nomeExibicao || d.nomeCompleto}</strong>
+                            <button class="btn-del" onclick="remover('${chave}')">🗑️</button>
+                        </div>
+                        <div class="dias-grid">${botoesHtml}</div>
+                    </div>`;
+            });
+        });
+    }
+
+    function alternarDia(chave, dia) {
+        const ref = db.ref('equipes_deptos').child(chave);
+        ref.once('value').then(snap => {
+            let dias = snap.val().disponibilidade || [];
+            dias = dias.includes(dia) ? dias.filter(d => d !== dia) : [...dias, dia];
+            ref.update({ disponibilidade: dias });
+        });
+    }
+
+    function remover(id) {
+        if (confirm("Remover membro deste departamento?")) db.ref('equipes_deptos').child(id).remove();
+    }
+
+    window.onload = () => {
+        document.getElementById('headerTitle').innerText = `⛪ Gestão: ${deptoLogado}`;
+        document.getElementById('displayDepto').innerText = deptoLogado;
+        carregarMembrosFirebase();
+        listarEquipes();
+    };
+</script>
+</body>
+</html>

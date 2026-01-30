@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel IASD - Sorteio Justo</title>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <style>
+        :root { --iasd-blue: #003366; --iasd-gold: #c5a059; --bg: #f0f2f5; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding-bottom: 30px; }
+        
+        header { background: var(--iasd-blue); color: white; padding: 15px; text-align: center; }
+        .container { padding: 12px; max-width: 500px; margin: auto; }
+
+        /* Visão Rápida Dinâmica */
+        .status-header { background: white; padding: 15px; border-radius: 12px; border-top: 4px solid var(--iasd-gold); margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .status-header h3 { margin: 0 0 10px; font-size: 0.9rem; color: var(--iasd-blue); text-transform: uppercase; }
+        .scale-mini-row { display: flex; justify-content: space-between; font-size: 0.85rem; padding: 4px 0; border-bottom: 1px dashed #eee; }
+
+        /* Grid de Departamentos */
+        .menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .menu-item { 
+            background: white; padding: 12px 5px; border-radius: 10px; text-align: center;
+            text-decoration: none; color: var(--iasd-blue); font-size: 0.75rem; font-weight: bold;
+            display: flex; flex-direction: column; align-items: center; gap: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: 0.2s; border: none; cursor: pointer;
+        }
+        .menu-item i { font-size: 1.5rem; }
+        .menu-item:active { background: #e8ecef; transform: translateY(2px); }
+
+        .btn-action { 
+            display: block; width: 100%; padding: 12px; margin-top: 15px; border-radius: 8px;
+            text-align: center; text-decoration: none; font-weight: bold; font-size: 0.9rem;
+        }
+        .btn-primary { background: var(--iasd-blue); color: white; }
+
+        /* Modal / Balão de Escolha */
+        .modal-overlay { 
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; 
+        }
+        .modal-content { 
+            background: white; padding: 20px; border-radius: 15px; width: 85%; max-width: 300px; text-align: center; 
+        }
+        .btn-modal { 
+            display: block; width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; 
+            text-decoration: none; font-weight: bold; background: #f0f4f8; color: var(--iasd-blue); box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+
+<header>Painel Administrativo</header>
+
+<div class="container">
+    <div class="status-header">
+        <h3 id="tituloProximoCulto">Próximo Culto</h3>
+        <div id="resumoEscala"></div>
+    </div>
+
+    <div style="font-size: 0.8rem; font-weight: bold; margin-bottom: 10px; color: #666;">DEPARTAMENTOS</div>
+    <div class="menu-grid">
+        <a href="membros.html?depto=Som" class="menu-item"><i>🔊</i> Som</a>
+        
+        <div class="menu-item" onclick="abrirModalLouvor()"><i>🎶</i> Louvor</div>
+        
+        <a href="membros.html?depto=Infantil" class="menu-item"><i>🎨</i> Infantil</a>
+        <a href="membros.html?depto=Recepção" class="menu-item"><i>🤝</i> Recepção</a>
+        <a href="membros.html?depto=Diáconos" class="menu-item"><i>🛡️</i> Diáconos</a>
+        <a href="membros.html?depto=E. Sabatina" class="menu-item"><i>📖</i> E. Sabatina</a>
+        <a href="membros.html?depto=Limpeza" class="menu-item"><i>🧹</i> Limpeza</a>
+        <a href="membros.html?depto=Mídia" class="menu-item"><i>💻</i> Mídia</a>
+    </div>
+
+    <a href="gerador.html" class="btn-action btn-primary">🚀 Gerar Próxima Escala</a>
+    <a href="consulta.html" class="btn-action" style="background: white; color: var(--iasd-blue); border: 1px solid var(--iasd-blue);">🔍 Consultar Todas</a>
+</div>
+
+<div id="modalLouvor" class="modal-overlay" onclick="fecharModal()">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <h3 style="color: var(--iasd-blue); margin-top: 0;">Equipe de Louvor</h3>
+        <a href="membros.html?depto=Louvor Congregacional" class="btn-modal">🎤 Congregacional</a>
+        <a href="membros.html?depto=Louvor Especial" class="btn-modal">🎻 Especial</a>
+        <button onclick="fecharModal()" style="background:none; border:none; color:red; margin-top:10px; font-weight:bold; cursor:pointer;">Fechar</button>
+    </div>
+</div>
+
+<script>
+    function atualizarVisaoCulto() {
+        const agora = new Date();
+        const dia = agora.getDay(); 
+        const hora = agora.getHours();
+        let proximo = "";
+        
+        if (dia === 6 && hora >= 12) proximo = "Domingo";
+        else if (dia === 0 && hora < 20) proximo = "Domingo";
+        else if ((dia === 0 && hora >= 20) || dia === 1 || dia === 2 || (dia === 3 && hora < 21)) proximo = "Quarta-feira";
+        else proximo = "Sábado";
+
+        document.getElementById('tituloProximoCulto').innerText = `Escala de ${proximo}`;
+        
+        document.getElementById('resumoEscala').innerHTML = `
+            <div class="scale-mini-row"><span>Som:</span> <strong>Alexandre</strong></div>
+            <div class="scale-mini-row"><span>Louvor:</span> <strong>Marluce</strong></div>
+            <div class="scale-mini-row"><span>Recepção:</span> <strong>Betinha</strong></div>
+        `;
+    }
+
+    function abrirModalLouvor() {
+        document.getElementById('modalLouvor').style.display = 'flex';
+    }
+
+    function fecharModal() {
+        document.getElementById('modalLouvor').style.display = 'none';
+    }
+
+    atualizarVisaoCulto();
+</script>
+</body>
+</html>
