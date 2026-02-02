@@ -9,7 +9,18 @@
     <style>
         :root { --iasd-blue: #003366; --iasd-light: #f4f7f9; --success: #22c55e; --danger: #dc2626; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--iasd-light); margin: 0; padding-bottom: 50px; }
-        header { background: var(--iasd-blue); color: white; padding: 15px; text-align: center; font-size: 1.2rem; font-weight: bold; }
+        header { 
+            background: #003366; /* Azul IASD */
+            color: white; 
+            padding: 25px 15px; 
+            text-align: center;
+            border-bottom: 5px solid #c5a059; /* Linha Dourada */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px; 
+        }
+        header h1 { margin: 0; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 1px; }
+        header p { margin: 5px 0 0; font-size: 0.7rem; letter-spacing: 3px; opacity: 0.9; }
+
         .container { padding: 15px; max-width: 600px; margin: auto; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
         h3 { color: var(--iasd-blue); margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 10px; }
@@ -25,10 +36,19 @@
 </head>
 <body>
 
-<header id="headerTitle">⛪ Gestão de Departamentos</header>
+<header>
+    <p>IGREJA ADVENTISTA DO SÉTIMO DIA</p>
+    <h1 id="headerTitle">SISTEMA DE GESTÃO DE ESCALAS</h1>
+</header>
 
 <div class="container">
-    <a href="index.html" class="back-link">← Voltar ao Menu</a>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <a href="index.html" class="back-link">← Voltar ao Menu</a>
+        <button onclick="irParaGerador()" class="btn-main" style="background-color: var(--iasd-gold); color: rgb(2, 2, 2); padding: 8px 15px; width: auto; font-size: 0.8rem; margin: 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                🚀 Gerar Escala de <span id="nomeDeptoBotao"></span>
+            </button>
+
+    </div>
 
     <div class="card">
         <h3>Adicionar ao Departamento</h3>
@@ -41,8 +61,9 @@
         <div id="displayDepto" style="font-weight: bold; color: var(--iasd-blue); padding: 12px; background: #eef2f7; border-radius: 8px;"></div>
 
         <button class="btn-main" onclick="vincularAoDepartamento()">+ Vincular Membro</button>
+        
     </div>
-
+    
     <div class="card">
         <h3>Equipe Escalável</h3>
         <div id="listaVinculados">Carregando membros...</div>
@@ -169,9 +190,19 @@
         if (confirm("Remover membro deste departamento?")) db.ref('equipes_deptos').child(id).remove();
     }
 
+    function irParaGerador() {
+        if (!deptoLogado) return alert("Erro: Departamento não identificado.");
+        window.location.href = `gerador.html?depto=${encodeURIComponent(deptoLogado)}`;
+    }
+
     window.onload = () => {
         document.getElementById('headerTitle').innerText = `⛪ Gestão: ${deptoLogado}`;
         document.getElementById('displayDepto').innerText = deptoLogado;
+        
+        // ATUALIZAÇÃO: Altera o texto do botão dourado para o nome do depto
+        const btnTexto = document.getElementById('nomeDeptoBotao');
+        if (btnTexto) btnTexto.innerText = deptoLogado;
+
         carregarMembrosFirebase();
         listarEquipes();
     };
