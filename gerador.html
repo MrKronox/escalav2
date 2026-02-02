@@ -3,208 +3,396 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerador Pro - IASD</title>
+    <title>Gerador de Escalas - IASD</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
-        :root { --iasd-blue: #003366; --iasd-gold: #c5a059; --bg: #f0f2f5; --success: #22c55e; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; color: #333; }
-        header { background: var(--iasd-blue); color: white; padding: 20px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .container { padding: 15px; max-width: 600px; margin: auto; }
-        
-        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        .card h3 { margin-top: 0; color: var(--iasd-blue); font-size: 1.1rem; display: flex; align-items: center; gap: 10px; }
-        
-        /* Estilo dos Seletores de Vagas */
-        .config-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
-        .config-row:last-child { border-bottom: none; }
-        .day-info { display: flex; flex-direction: column; }
-        .day-name { font-weight: bold; color: #444; }
-        .day-sub { font-size: 0.75rem; color: #888; }
-        
-        .counter { display: flex; align-items: center; gap: 12px; background: #f8f9fa; padding: 5px 10px; border-radius: 20px; }
-        .counter button { background: white; border: 1px solid #ddd; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-weight: bold; }
-        .counter span { font-weight: bold; min-width: 20px; text-align: center; }
+        :root { 
+            --iasd-blue: #003366; 
+            --iasd-gold: #c5a059; 
+            --iasd-light-blue: #f4f7fa;
+            --text-dark: #2d3748;
+            --border: #e2e8f0;
+        }
 
-        .btn-magic { width: 100%; padding: 16px; background: var(--iasd-blue); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 12px rgba(0,51,102,0.2); }
-        .btn-magic:active { transform: scale(0.98); }
+        body { 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            background: #f0f2f5; 
+            margin: 0; 
+            color: var(--text-dark);
+        }
 
-        .resumo-vagas { background: #eef2f7; padding: 10px; border-radius: 8px; font-size: 0.85rem; margin-top: 10px; color: var(--iasd-blue); }
+        header { 
+            background: #003366; 
+            color: white; 
+            padding: 25px 15px; 
+            text-align: center;
+            border-bottom: 5px solid #c5a059; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        header h1 { margin: 0; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 1px; }
+        header p { margin: 5px 0 0; font-size: 0.7rem; letter-spacing: 3px; opacity: 0.9; }
+
+        .container { padding: 20px; max-width: 900px; margin: auto; }
+
+        .card { 
+            background: white; 
+            border-radius: 8px; 
+            padding: 24px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
+            margin-bottom: 25px; 
+            border: 1px solid var(--border);
+        }
+
+        .section-header { 
+            display: flex; 
+            align-items: center; 
+            margin-bottom: 25px; 
+            padding-left: 12px;
+            border-left: 4px solid var(--iasd-blue);
+        }
         
+        .section-header h3 { 
+            margin: 0; 
+            color: var(--iasd-blue); 
+            font-size: 0.9rem; 
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .grid-inputs { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 20px; 
+        }
+
+        .input-group label { 
+            display: block; 
+            font-size: 0.75rem; 
+            font-weight: 700; 
+            color: #718096; 
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .input-group input { 
+            width: 100%; 
+            padding: 12px; 
+            border: 1.5px solid var(--border); 
+            border-radius: 6px; 
+            box-sizing: border-box;
+        }
+
+        .frequencia-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); 
+            gap: 12px; 
+        }
+
+        .dia-card { 
+            background: white;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            padding: 15px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .dia-card.active { 
+            border-color: var(--iasd-blue);
+            background-color: var(--iasd-light-blue);
+        }
+
+        .dia-card .nome { display: block; font-weight: 800; color: var(--text-dark); margin-bottom: 5px; }
+        .dia-card.active .nome { color: var(--iasd-blue); }
+        .dia-card .label-pess { font-size: 0.65rem; color: #a0aec0; display: block; margin-bottom: 5px; }
+
+        .dia-card input { 
+            width: 50px; 
+            padding: 5px; 
+            border: 1px solid var(--border); 
+            border-radius: 4px; 
+            text-align: center; 
+            font-weight: bold;
+        }
+
+        .btn-iasd { 
+            background: var(--iasd-blue); 
+            color: white; 
+            border: none; 
+            width: 100%; 
+            padding: 18px; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            text-transform: uppercase; 
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 51, 102, 0.2);
+        }
+
+        .badge-membro {
+            background: var(--iasd-blue);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+        }
+
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th { text-align: left; font-size: 0.75rem; color: #888; text-transform: uppercase; padding: 8px; }
-        td { padding: 12px 8px; border-top: 1px solid #f0f0f0; }
-        .badge-date { background: var(--iasd-blue); color: white; padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; }
-        
-        .membro-tag { background: #e8f5e9; color: #2e7d32; padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; margin-right: 4px; display: inline-block; border: 1px solid #c8e6c9; }
+        th { text-align: left; border-bottom: 2px solid var(--iasd-gold); padding: 10px; }
+        td { padding: 10px; border-bottom: 1px solid var(--border); }
+
+        @media (max-width: 600px) {
+            .grid-inputs { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
 
-<header id="headerDinamico">Gerador de Escala</header>
+<header>
+    <p>IGREJA ADVENTISTA DO SÉTIMO DIA</p>
+    <h1 id="headerTitle">SISTEMA DE GESTÃO DE ESCALAS</h1>
+</header>
 
 <div class="container">
+    <div style="margin-bottom: 15px;">
+        <a href="javascript:void(0)" onclick="voltarParaMembros()" style="text-decoration: none; color: var(--iasd-blue); font-weight: bold;">
+            ← Voltar para Gestão de Membros
+        </a>
+    </div>
+    
     <div class="card">
-        <h3>📅 Período da Escala</h3>
-        <div style="display: flex; gap: 10px;">
-            <div style="flex: 2;">
-                <label style="font-size: 0.8rem; color: #666;">Mês</label>
-                <select id="mesEscala" onchange="atualizarTextoVagas()"></select>
+        <div class="section-header"><h3>📖 Período e Departamento</h3></div>
+        <div class="grid-inputs">
+            <div class="input-group">
+                <label>Departamento Selecionado</label>
+                <div id="displayDepto" style="font-weight: bold; color: var(--iasd-blue); padding: 12px; background: var(--iasd-light-blue); border-radius: 6px; border: 1.5px solid var(--border);">Carregando...</div>
             </div>
-            <div style="flex: 1;">
-                <label style="font-size: 0.8rem; color: #666;">Ano</label>
-                <input type="number" id="anoEscala" readonly style="background: #f0f0f0; border: none; font-weight: bold;">
+            <div class="input-group">
+                <label>Mês de Referência</label>
+                <input type="month" id="mesRef" onchange="atualizarDatasAutomaticas()">
+            </div>
+            <div class="input-group">
+                <label>Data Início</label>
+                <input type="date" id="dataInicio">
+            </div>
+            <div class="input-group">
+                <label>Data Fim</label>
+                <input type="date" id="dataFim">
             </div>
         </div>
     </div>
 
     <div class="card">
-        <h3>👥 Vagas por Culto</h3>
-        <div id="configVagas">
-            </div>
-        <div class="resumo-vagas" id="resumoVagas">Selecione o mês para calcular</div>
+        <div class="section-header"><h3>⚙️ Frequência (Dias e Pessoas)</h3></div>
+        <div class="frequencia-grid">
+            <div class="dia-card active" onclick="toggleDia(this, 0)" data-dia="0"><span class="nome">Dom</span><span class="label-pess">Pess.</span><input type="number" value="1" onclick="event.stopPropagation()"></div>
+            <div class="dia-card" onclick="toggleDia(this, 1)" data-dia="1"><span class="nome">Seg</span><span class="label-pess">Pess.</span><input type="number" value="1" onclick="event.stopPropagation()"></div>
+            <div class="dia-card" onclick="toggleDia(this, 2)" data-dia="2"><span class="nome">Ter</span><span class="label-pess">Pess.</span><input type="number" value="1" onclick="event.stopPropagation()"></div>
+            <div class="dia-card active" onclick="toggleDia(this, 3)" data-dia="3"><span class="nome">Qua</span><span class="label-pess">Pess.</span><input type="number" value="1" onclick="event.stopPropagation()"></div>
+            <div class="dia-card" onclick="toggleDia(this, 4)" data-dia="4"><span class="nome">Qui</span><span class="label-pess">Pess.</span><input type="number" value="1" onclick="event.stopPropagation()"></div>
+            <div class="dia-card" onclick="toggleDia(this, 5)" data-dia="5"><span class="nome">Sex</span><span class="label-pess">Pess.</span><input type="number" value="1" onclick="event.stopPropagation()"></div>
+            <div class="dia-card active" onclick="toggleDia(this, 6)" data-dia="6"><span class="nome">Sáb</span><span class="label-pess">Pess.</span><input type="number" value="1" onclick="event.stopPropagation()"></div>
+        </div>
     </div>
 
-    <button class="btn-magic" onclick="executarSorteioInteligente()">✨ Gerar Escala Justa</button>
+    <button class="btn-iasd" onclick="gerarEscala()">Gerar Escala Inteligente</button>
 
-    <div id="areaResultado" class="card" style="display:none; margin-top: 20px;">
-        <h3>📋 Resultado da Equipe</h3>
-        <div id="tabelaResultado"></div>
-        <button class="btn-magic" style="background: var(--success); margin-top: 15px;">💾 Publicar Escala</button>
+    <div class="card" id="cardResultado" style="margin-top: 20px; display: none;">
+        <div class="section-header"><h3>📅 Escala Gerada</h3></div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Dia</th>
+                    <th>Responsáveis</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="resultadoEscala"></tbody>
+        </table>
     </div>
 </div>
 
-
-
 <script>
-    // 1. Configuração e Variáveis Globais
-    const urlParams = new URLSearchParams(window.location.search);
-    const deptoLogado = urlParams.get('depto') || "Som";
-    const firebaseConfig = { /* ... seu config ... */ };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    const mesesNomes = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-    const vagasPorDia = { 0: 2, 3: 1, 6: 2 }; // Padrão: Dom(2), Qua(1), Sab(2)
-
-    // 2. Inicialização
-    window.onload = () => {
-        document.getElementById('headerDinamico').innerText = `🚀 Gerador: ${deptoLogado}`;
-        
-        const dataAtual = new Date();
-        const inputAno = document.getElementById('anoEscala');
-        const selectMes = document.getElementById('mesEscala');
-        
-        inputAno.value = dataAtual.getFullYear();
-        
-        mesesNomes.forEach((mes, i) => {
-            let opt = document.createElement('option');
-            opt.value = i;
-            opt.text = mes;
-            if(i === dataAtual.getMonth() + 1) opt.selected = true; // Sugere o próximo mês
-            selectMes.appendChild(opt);
-        });
-
-        renderizarConfigVagas();
-        atualizarTextoVagas();
+    let listaMembrosParaAutocomplete = [];
+    
+    const firebaseConfig = {
+        apiKey: "AIzaSyBYtUnqsokLE1RnK1TGbswbnsLXPpvvdc0",
+        authDomain: "escala7igreja.firebaseapp.com",
+        databaseURL: "https://escala7igreja-default-rtdb.firebaseio.com", // Verifique se esta URL está correta no seu console
+        projectId: "escala7igreja",
+        storageBucket: "escala7igreja.firebasestorage.app",
+        messagingSenderId: "778312493987",
+        appId: "1:778312493987:web:2851b2fc65331e4ac14816"
     };
 
-    function renderizarConfigVagas() {
-        const container = document.getElementById('configVagas');
-        const dias = [
-            { id: 6, nome: "Sábado", sub: "Culto Divino / Jovem" },
-            { id: 0, nome: "Domingo", sub: "Culto Evangelístico" },
-            { id: 3, nome: "Quarta-feira", sub: "Culto de Oração" }
-        ];
-
-        container.innerHTML = dias.map(d => `
-            <div class="config-row">
-                <div class="day-info">
-                    <span class="day-name">${d.nome}</span>
-                    <span class="day-sub">${d.sub}</span>
-                </div>
-                <div class="counter">
-                    <button onclick="alterarVaga(${d.id}, -1)">-</button>
-                    <span id="vaga-val-${d.id}">${vagasPorDia[d.id]}</span>
-                    <button onclick="alterarVaga(${d.id}, 1)">+</button>
-                </div>
-            </div>
-        `).join('');
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
     }
+    const db = firebase.database(); // VOLTANDO PARA REALTIME
 
-    function alterarVaga(id, delta) {
-        vagasPorDia[id] = Math.max(0, vagasPorDia[id] + delta);
-        document.getElementById(`vaga-val-${id}`).innerText = vagasPorDia[id];
-        atualizarTextoVagas();
-    }
+    const urlParams = new URLSearchParams(window.location.search);
+    const deptoLogado = urlParams.get('depto') || "Geral";
+    let diasAtivos = [0, 3, 6];
 
-    function atualizarTextoVagas() {
-        const mes = document.getElementById('mesEscala').value;
-        const ano = document.getElementById('anoEscala').value;
-        // Lógica para contar quantos sábados, domingos e quartas tem no mês...
-        document.getElementById('resumoVagas').innerText = `Configurado para ${deptoLogado} em ${mesesNomes[mes]}`;
-    }
-
-    async function executarSorteioInteligente() {
-        const mes = parseInt(document.getElementById('mesEscala').value);
-        const ano = parseInt(document.getElementById('anoEscala').value);
-
-        // 1. Puxar membros
-        const snapshot = await db.ref('equipes_deptos').orderByChild('departamento').equalTo(deptoLogado).once('value');
-        let membros = [];
-        snapshot.forEach(child => { membros.push(child.val()); });
-
-        if(membros.length === 0) return alert("Adicione membros primeiro!");
-
-        // 2. Criar Calendário do Mês
-        let diasNoMes = [];
-        let data = new Date(ano, mes, 1);
-        while(data.getMonth() === mes) {
-            const ds = data.getDay();
-            if(vagasPorDia[ds] > 0) {
-                diasNoMes.push({
-                    dataStr: data.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'}),
-                    diaSemana: ds,
-                    vagas: vagasPorDia[ds],
-                    escalados: []
-                });
-            }
-            data.setDate(data.getDate() + 1);
+    function toggleDia(card, diaIndex) {
+        card.classList.toggle('active');
+        const dia = parseInt(diaIndex);
+        if (card.classList.contains('active')) {
+            if (!diasAtivos.includes(dia)) diasAtivos.push(dia);
+        } else {
+            diasAtivos = diasAtivos.filter(d => d !== dia);
         }
-
-        // 3. SORTEIO COM LÓGICA DE FILA (ROUND-ROBIN)
-        // Embaralha a lista inicial para ser justo
-        membros.sort(() => Math.random() - 0.5);
-        
-        let pointer = 0;
-        diasNoMes.forEach(dia => {
-            let disponiveis = membros.filter(m => m.disponibilidade.includes(dia.diaSemana.toString()));
-            
-            for(let v=0; v < dia.vagas; v++) {
-                if(disponiveis.length > 0) {
-                    // Pega o próximo da fila que esteja disponível
-                    let escolhido = disponiveis[pointer % disponiveis.length];
-                    dia.escalados.push(escolhido.nomeExibicao);
-                    pointer++;
-                }
-            }
-        });
-
-        renderizarResultado(diasNoMes);
     }
 
-    function renderizarResultado(dias) {
-        let html = `<table><thead><tr><th>DATA</th><th>VOLUNTÁRIOS</th></tr></thead><tbody>`;
-        dias.forEach(d => {
-            const tags = d.escalados.map(n => `<span class="membro-tag">${n}</span>`).join('');
-            html += `<tr>
-                <td><span class="badge-date">${d.dataStr}</span></td>
-                <td>${tags || '<span style="color:#ccc">---</span>'}</td>
-            </tr>`;
-        });
-        html += `</tbody></table>`;
-        document.getElementById('tabelaResultado').innerHTML = html;
-        document.getElementById('areaResultado').style.display = 'block';
+    function atualizarDatasAutomaticas() {
+        const mesRef = document.getElementById('mesRef').value;
+        if(mesRef) {
+            const [ano, mes] = mesRef.split('-');
+            const primeiro = new Date(ano, mes - 1, 1);
+            const ultimo = new Date(ano, mes, 0);
+            const formatar = (data) => {
+                const z = data.getTimezoneOffset() * 60 * 1000;
+                const local = new Date(data - z);
+                return local.toISOString().split('T')[0];
+            };
+            document.getElementById('dataInicio').value = formatar(primeiro);
+            document.getElementById('dataFim').value = formatar(ultimo);
+        }
+    }
+
+    window.onload = () => {
+        document.getElementById('displayDepto').innerText = deptoLogado;
+        const d = new Date();
+        document.getElementById('mesRef').value = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0');
+        atualizarDatasAutomaticas();
+    };
+
+    async function gerarEscala() {
+        const dataInicioVal = document.getElementById('dataInicio').value;
+        const dataFimVal = document.getElementById('dataFim').value;
+        const dataInicio = new Date(dataInicioVal + 'T00:00:00');
+        const dataFim = new Date(dataFimVal + 'T00:00:00');
+
+        try {
+            // 1. Puxa Membros do caminho correto 'equipes_deptos'
+            const snapshotMembros = await db.ref("equipes_deptos").once("value");
+            let voluntarios = [];
+            listaMembrosOficiais = []; // Reinicia a lista para o autocomplete
+            
+            snapshotMembros.forEach(child => {
+                const dados = child.val();
+                
+                if (dados.departamento === deptoLogado) {
+                    const nomeFinal = dados.nomeExibicao || dados.nomeCompleto || "Sem Nome";
+                    
+                    voluntarios.push({
+                        id: child.key,
+                        nome: nomeFinal, 
+                        vezesEscalado: 0,
+                        disponibilidade: dados.disponibilidade || [] 
+                    });
+
+                    // Alimenta a lista do autocomplete para o botão lápis
+                    if(!listaMembrosOficiais.includes(nomeFinal)) {
+                        listaMembrosOficiais.push(nomeFinal);
+                    }
+                }
+            });
+
+            if (voluntarios.length === 0) {
+                alert("Nenhum membro encontrado para: " + deptoLogado);
+                return;
+            }
+
+            let corpoTabela = "";
+            let dataAtual = new Date(dataInicio);
+            let ultimoSorteadoId = null;
+            const diasNome = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+            while (dataAtual <= dataFim) {
+                const diaSemana = dataAtual.getDay();
+                
+                if (diasAtivos.includes(diaSemana)) {
+                    let aptos = voluntarios.filter(v => {
+                        const disp = Array.isArray(v.disponibilidade) ? v.disponibilidade : Object.values(v.disponibilidade);
+                        return disp.map(Number).includes(diaSemana);
+                    });
+
+                    if (aptos.length > 1) {
+                        aptos = aptos.filter(v => v.id !== ultimoSorteadoId);
+                    }
+
+                    aptos.sort((a, b) => a.vezesEscalado - b.vezesEscalado);
+
+                    if (aptos.length > 0) {
+                        const sorteado = aptos[0];
+                        sorteado.vezesEscalado++;
+                        ultimoSorteadoId = sorteado.id;
+
+                        corpoTabela += `
+                            <tr>
+                                <td>${dataAtual.toLocaleDateString('pt-BR')}</td>
+                                <td style="color: #a0aec0;">${diasNome[diaSemana]}</td>
+                                <td style="font-weight: 500; color: var(--iasd-blue);">${sorteado.nome}</td>
+                                <td>
+                                    <button onclick="editarLinha(this)" style="background:none; border:none; cursor:pointer; color:#f6ad55; font-size:1.2rem; margin-right:10px;">✎</button>
+                                    <button onclick="excluirLinha(this)" style="background:none; border:none; cursor:pointer; color:#e53e3e; font-size:1.2rem;">🗑</button>
+                                </td>
+                            </tr>`;
+                    }
+                }
+                dataAtual.setDate(dataAtual.getDate() + 1);
+            }
+            
+            document.getElementById('resultadoEscala').innerHTML = corpoTabela;
+            document.getElementById('cardResultado').style.display = 'block';
+
+        } catch (error) {
+            console.error("Erro Realtime:", error);
+            alert("Erro ao ler dados: " + error.message);
+        }
+    }
+
+    function voltarParaMembros() {
+        window.location.href = `membros.html?depto=${encodeURIComponent(deptoLogado)}`;
+    }
+
+    function excluirLinha(botao) {
+        if(confirm("Deseja remover este registro da escala?")) {
+            botao.closest('tr').remove();
+        }
+    }
+
+    function editarLinha(botao) {
+        const linha = botao.closest('tr');
+        const celulaNome = linha.cells[2];
+        const nomeAtual = celulaNome.innerText;
+
+        // Criar datalist dinâmico para o autocomplete
+        const idLista = "lista_" + Math.floor(Math.random() * 1000);
+        const opcoes = listaMembrosOficiais.map(n => `<option value="${n}">`).join('');
+
+        celulaNome.innerHTML = `
+            <div style="display: flex; gap: 5px;">
+                <input type="text" list="${idLista}" id="inputEdit" value="${nomeAtual}" 
+                    style="padding: 5px; border: 1px solid var(--iasd-gold); border-radius: 4px; width: 100%;">
+                <datalist id="${idLista}">${opcoes}</datalist>
+                <button onclick="confirmarEdicao(this)" style="background: var(--iasd-blue); color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">OK</button>
+            </div>
+        `;
+    }
+
+    function confirmarEdicao(botao) {
+        const novoNome = botao.parentElement.querySelector('#inputEdit').value;
+        const celula = botao.closest('td');
+        if (novoNome.trim() !== "") {
+            celula.innerHTML = novoNome;
+            celula.style.fontWeight = "500";
+            celula.style.color = "var(--iasd-blue)";
+        }
     }
 </script>
 </body>
