@@ -26,12 +26,119 @@
         h3 { color: var(--iasd-blue); margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 10px; }
         label { display: block; font-weight: bold; margin: 15px 0 5px; color: #555; font-size: 0.9rem; }
         input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        /* Container para alinhar Input e Botão "Add Item" */
+        .input-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .input-row input {
+            flex: 1; /* Ocupa o espaço máximo */
+        }
         .dias-grid { display: flex; justify-content: space-between; gap: 5px; margin-top: 10px; }
         .dia-btn { flex: 1; height: 35px; border-radius: 6px; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold; background: white; font-size: 11px; }
         .dia-btn.active { background: var(--success); color: white; border-color: var(--success); }
         .btn-main { width: 100%; padding: 15px; background: var(--iasd-blue); color: white; border: none; border-radius: 8px; font-weight: bold; margin-top: 20px; font-size: 1rem; cursor: pointer; }
         .btn-del { color: var(--danger); background: none; border: none; font-size: 1.2rem; cursor: pointer; }
         .back-link { display: inline-block; margin-bottom: 15px; text-decoration: none; color: var(--iasd-blue); font-weight: bold; }
+        /* O botão de adicionar compacto (Baseado no seu modelo) */
+        .button-add-compact {
+            position: relative;
+            width: 45px; /* Começa pequeno apenas com o ícone */
+            height: 45px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            border: 1px solid #34974d;
+            background-color: #3aa856;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.3s;
+            flex-shrink: 0;
+        }
+        .button-add-compact .button__text {
+            opacity: 0;
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            transition: all 0.3s;
+            position: absolute;
+            left: 45px;
+        }
+        .button-add-compact .button__icon {
+            position: absolute;
+            height: 100%;
+            width: 45px;
+            background-color: #34974d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            left: 0;
+        }
+
+    .button-add-compact svg { width: 24px; stroke: #fff; }
+
+    /* Efeito Hover: Expande para mostrar o texto */
+    .button-add-compact:hover { width: 90px; }
+    .button-add-compact:hover .button__text { opacity: 1; transform: translateX(-5px); padding: 9px; }
+    .button-add-compact:hover .button__icon { background-color: #2e8644; }
+
+    /* Ajuste de cor para o botão de Gerar Escala no final */
+    .btn-gold-main {
+        background-color: #c5a059 !important;
+        color: #f3f3f3 !important;
+        box-shadow: 0 4px 12px rgba(197, 160, 89, 0.3);
+        border-radius: 12px !important;
+    }
+
+    /* Botão Voltar Estilizado */
+    .btn-voltar-container {
+        margin-bottom: 20px;
+        display: inline-block;
+    }
+
+    .button-back {
+        background-color: transparent;
+        color: var(--iasd-blue);
+        width: 8.5em;
+        height: 2.9em;
+        border: var(--iasd-blue) 0.15em solid; /* Borda um pouco mais fina para elegância */
+        border-radius: 11px;
+        text-align: right;
+        transition: all 0.5s ease;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        cursor: pointer;
+        font-weight: 600;
+        padding: 0;
+    }
+
+    .button-back:hover {
+        background-color: var(--iasd-blue);
+        color: #fff;
+    }
+
+    .button-back svg {
+        width: 1.4em;
+        left: 0.8em;
+        position: absolute;
+        transition: all 0.5s ease;
+        /* Invertendo a seta para apontar para a esquerda */
+        transform: rotate(180deg); 
+    }
+
+    .button-back:hover svg {
+        transform: rotate(180deg) translateX(5px);
+        stroke: #fff;
+    }
+
+    .button-back .text {
+        margin: 0 1.2em;
+    }
     </style>
 </head>
 <body>
@@ -42,26 +149,39 @@
 </header>
 
 <div class="container">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-        <a href="index.html" class="back-link">← Voltar ao Menu</a>
-        <button onclick="irParaGerador()" class="btn-main" style="background-color: var(--iasd-gold); color: rgb(2, 2, 2); padding: 8px 15px; width: auto; font-size: 0.8rem; margin: 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                🚀 Gerar Escala de <span id="nomeDeptoBotao"></span>
-            </button>
-
+    <div class="btn-voltar-container">
+        <button class="button-back" onclick="window.location.href='index.html'">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12h15m0 0l-6.75-6.75M19.5 12l-6.75 6.75" />
+            </svg>
+            <div class="text">Voltar</div>
+        </button>
     </div>
 
     <div class="card">
         <h3>Adicionar ao Departamento</h3>
         
         <label>Nome do Voluntário:</label>
-        <input type="text" id="buscaMembro" list="membrosData" placeholder="Digite o nome...">
-        <datalist id="membrosData"></datalist>
+        <div class="input-row">
+            <input type="text" id="buscaMembro" list="membrosData" placeholder="Digite o nome...">
+            <datalist id="membrosData"></datalist>
+
+            <button type="button" class="button-add-compact" onclick="vincularAoDepartamento()">
+                <span class="button__text">+Add</span>
+                <span class="button__icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" stroke="currentColor" fill="none">
+                        <line y2="19" y1="5" x2="12" x1="12" /><line y2="12" y1="12" x2="19" x1="5" />
+                    </svg>
+                </span>
+            </button>
+        </div>
 
         <label>Departamento Selecionado:</label>
-        <div id="displayDepto" style="font-weight: bold; color: var(--iasd-blue); padding: 12px; background: #eef2f7; border-radius: 8px;"></div>
+        <div id="displayDepto" style="font-weight: bold; color: var(--iasd-blue); padding: 12px; background: #eef2f7; border-radius: 8px; margin-bottom: 10px;"></div>
 
-        <button class="btn-main" onclick="vincularAoDepartamento()">+ Vincular Membro</button>
-        
+        <button onclick="irParaGerador()" class="btn-main btn-gold-main">
+            🚀 Gerar Escala de <span id="nomeDeptoBotao"></span>
+        </button>
     </div>
     
     <div class="card">
