@@ -55,23 +55,29 @@
     .scale-mini-row { display: flex; justify-content: space-between; font-size: 0.85rem; padding: 6px 0; border-bottom: 1px dashed #eee; }
 
     /* Lista de Departamentos - ESTILO BRUTALISTA */
-    .menu-grid { display: flex; flex-direction: column; gap: 12px; }
+    .menu-grid { 
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        flex-direction: column; 
+        gap: 11px; }
 
     .menu-card { 
-        background: var(--iasd-blue); 
+        background: white; /* Fundo branco para leveza */
         text-decoration: none; 
         display: flex; 
-        justify-content: space-between; 
+        flex-direction: column; /* Ícone em cima, texto embaixo */
+        justify-content: center; 
         align-items: center; 
-        padding: 18px 20px; 
-        border-radius: 6px; 
-        border: 2px solid #fff;
-        outline: 3px solid var(--iasd-blue);
-        box-shadow: 6px 6px 0 var(--iasd-gold); 
-        transition: all 0.1s ease-out; 
+        padding: 5px 2px; 
+        border-radius: 12px; /* Mais arredondado = mais amigável */
+        border: 1px solid #edf2f7; /* Borda fina e discreta */
+        /* Sombra suave em vez de sólida para não ficar "pesado" */
+        box-shadow: 0 2px 5px rgba(0, 51, 102, 0.08); 
+        transition: all 0.2s ease-out; 
         position: relative;
         overflow: hidden;
         cursor: pointer;
+        min-height: 90px; /* Garante que todos tenham o mesmo tamanho */
     }
 
     /* Efeito de Brilho no Hover */
@@ -85,7 +91,9 @@
 
     @keyframes slide { 0% { left: -100%; } 100% { left: 100%; } }
 
-    .menu-card:hover::before { animation: slide 1.5s infinite; }
+    .menu-card:hover::before { 
+        animation: slide 1.5s infinite; 
+        background: linear-gradient(90deg, transparent, rgba(197, 160, 89, 0.1), transparent); }
 
     .menu-card:hover { 
         transform: translate(-3px, -3px); 
@@ -98,8 +106,19 @@
         background-color: #fff;
     }
 
-    .menu-content { display: flex; align-items: center; gap: 15px; z-index: 2; }
-    .menu-icon { font-size: 1.5rem; transition: transform 0.2s; }
+    .menu-content { 
+        display: flex; 
+        flex-direction: column; /* Alinha ícone e texto verticalmente */
+        align-items: center; 
+        gap: 12px; 
+        z-index: 2;
+    }
+
+    .menu-icon { 
+        font-size: 2.2rem; /* Ícone maior e centralizado */
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+    }
+
     .menu-card:hover .menu-icon { transform: rotate(-10deg) scale(1.2); }
 
     .menu-text { 
@@ -111,9 +130,14 @@
     }
     
     /* Ajuste para o texto não sumir quando clicar */
-    .menu-card:active .menu-text { color: var(--iasd-blue); }
+    .menu-card:active {
+        transform: scale(0.95);
+        background-color: #f8fafc;
+    }
+    
+    .menu-text { color: var(--iasd-blue); }
 
-    .menu-arrow { color: var(--iasd-gold); font-size: 1.2rem; z-index: 2; }
+    .menu-arrow { display: none }
 
     /* Botão de Consulta Geral */
     .btn-iasd { 
