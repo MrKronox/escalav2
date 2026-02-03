@@ -542,7 +542,6 @@
         const dataFim = new Date(dataFimVal + 'T00:00:00');
 
         try {
-            // 1. CARREGA TODAS AS ESCALAS DO MÊS PARA VERIFICAR CONFLITOS
             const mesRef = document.getElementById('mesRef').value;
             const snapshotTodasEscalas = await db.ref("escalas_salvas").once("value");
             const todasEscalasDoMes = snapshotTodasEscalas.val() || {};
@@ -579,7 +578,15 @@
 
             while (dataAtual <= dataFim) {
                 const diaSemana = dataAtual.getDay();
-                const dataString = dataAtual.toLocaleDateString('pt-BR');
+                
+                // --- AJUSTE DE DATA ---
+                // dataParaBusca: Usada para comparar com o Firebase (contém o ano)
+                const dataParaBusca = dataAtual.toLocaleDateString('pt-BR'); 
+                
+                // dataParaExibicao: Usada para mostrar na tabela (sem o ano)
+                const dia = String(dataAtual.getDate()).padStart(2, '0');
+                const mes = String(dataAtual.getMonth() + 1).padStart(2, '0');
+                const dataParaExibicao = `${dia}/${mes}`;
 
                 if (diasAtivos.includes(diaSemana)) {
                     const bubbleDia = document.querySelector(`.dia-bubble[data-dia="${diaSemana}"]`);
@@ -589,20 +596,19 @@
                     let escaladosNoDia = [];
 
                     for (let i = 0; i < qtdPessoas; i++) {
-                        // Filtra aptos pela disponibilidade e evita duplicar no mesmo dia
                         let aptos = voluntarios.filter(v => {
                             const disp = Array.isArray(v.disponibilidade) ? v.disponibilidade : Object.values(v.disponibilidade);
                             return disp.map(Number).includes(diaSemana) && !escaladosNoDia.includes(v.id);
                         });
 
                         if (aptos.length > 0) {
-                            // --- VERIFICAÇÃO DE CONFLITO EM OUTROS DEPTOS ---
                             let listaCandidatos = aptos.map(v => {
                                 let deptosConflitantes = [];
                                 Object.keys(todasEscalasDoMes).forEach(depto => {
                                     if (depto !== deptoLogado && todasEscalasDoMes[depto][mesRef]) {
+                                        // Compara usando a data com ano para garantir o match no banco
                                         const jaEscalado = todasEscalasDoMes[depto][mesRef].corpo.some(item => 
-                                            item.data === dataString && item.nome === v.nome
+                                            item.data === dataParaBusca && item.nome === v.nome
                                         );
                                         if (jaEscalado) deptosConflitantes.push(depto);
                                     }
@@ -610,17 +616,12 @@
                                 return { ...v, conflitos: deptosConflitantes };
                             });
 
-                            // Tenta primeiro quem NÃO tem conflitos
                             let semConflito = listaCandidatos.filter(v => v.conflitos.length === 0);
-                            
-                            // Se não houver ninguém sem conflito, usa a lista geral (redundância)
                             let listaFinal = semConflito.length > 0 ? semConflito : listaCandidatos;
 
-                            // Escolhe quem trabalhou menos (e aplica sorteio aleatório entre eles)
                             const minEscalas = Math.min(...listaFinal.map(v => v.vezesEscalado));
                             let candidatosFinais = listaFinal.filter(v => v.vezesEscalado === minEscalas);
                             
-                            // Evita repetir o último sorteado do dia anterior se houver opção
                             if (candidatosFinais.length > 1) {
                                 candidatosFinais = candidatosFinais.filter(v => v.id !== ultimoSorteadoId);
                             }
@@ -632,25 +633,24 @@
                             escaladosNoDia.push(sorteado.id);
 
                             const temAlerta = sorteado.conflitos && sorteado.conflitos.length > 0;
-                            const textoConflito = temAlerta ? `⚠️ Já escalado em: ${sorteado.conflitos.join(', ')}` : '';
 
                             corpoTabela += `
                                 <tr>
-                                    <td>${i === 0 ? `<strong>${dataString}</strong>` : ''}</td>
+                                    <td>${i === 0 ? `<strong>${dataParaExibicao}</strong>` : ''}</td>
                                     <td style="color: #718096;">${i === 0 ? diasNome[diaSemana] : ''}</td>
                                     <td>
                                         <div class="nome-container" 
                                             onclick="toggleMenu(event, this)" 
-                                            data-conflitos="${temAlerta ? sorteado.conflitos.join(', ') : ''}">
-                                            
-                                            ${temAlerta ? '<span class="alerta-conflito"></span>' : ''}
+                                            data-conflitos="${temAlerta ? sorteado.conflitos.join(', ') : ''}"
+                                            data-data-real="${dataParaBusca}"> ${temAlerta ? '<span class="alerta-conflito"></span>' : ''}
                                             <span class="texto-nome" style="font-weight: 600; color: ${temAlerta ? '#e53e3e' : 'var(--iasd-blue)'};">
                                                 ${sorteado.nome}
                                             </span>
                                         </div>
                                         
                                         <div class="menu-contexto">
-                                            <div class="conflito-info" style="display:none;"></div> <ul>
+                                            <div class="conflito-info" style="display:none;"></div> 
+                                            <ul>
                                                 <li onclick="ativarEdicao(this)"><span>✎</span> Editar</li>
                                                 <li class="delete" onclick="excluirLinha(this)"><span>🗑</span> Excluir</li>
                                             </ul>
