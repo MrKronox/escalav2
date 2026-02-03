@@ -45,6 +45,10 @@
             border: 1px solid var(--border);
         }
 
+        #cardResultado {
+            overflow-x: auto;
+        }
+
         .section-header { 
             display: flex; 
             align-items: center; 
@@ -83,21 +87,89 @@
             border-radius: 6px; 
             box-sizing: border-box;
         }
-
+        /* Container da grade mais fluido e moderno */
         .frequencia-grid { 
             display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); 
-            gap: 12px; 
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); 
+            gap: 15px; 
+            margin-top: 10px;
         }
 
-        .dia-card { 
+        /* O "Bubble" do Dia - Estilo de App Premium */
+        .dia-bubble { 
             background: white;
-            border: 2px solid var(--border);
-            border-radius: 10px;
+            border: 2px solid #edf2f7;
+            border-radius: 20px; /* Bordas bem arredondadas */
             padding: 15px 10px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        /* Estado Ativo: Elevação e Cor */
+        .dia-bubble.active { 
+            border-color: var(--iasd-blue);
+            background-color: #f8faff;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 51, 102, 0.1);
+        }
+
+        .dia-bubble .dia-nome { 
+            display: block; 
+            font-weight: 800; 
+            font-size: 0.8rem;
+            color: #94a3b8; 
+            margin-bottom: 10px; 
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .dia-bubble.active .dia-nome { color: var(--iasd-blue); }
+
+        /* Seletor Numérico flutuante */
+        .pessoas-control { 
+            background: #f1f5f9;
+            border-radius: 12px;
+            padding: 6px 10px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .dia-bubble.active .pessoas-control {
+            background: var(--iasd-blue);
+            color: white;
+        }
+
+        .pessoas-control input { 
+            width: 30px; 
+            background: transparent;
+            border: none;
+            text-align: center;
+            font-weight: bold;
+            color: inherit;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        /* Remove setas padrão do input numérico */
+        .pessoas-control input::-webkit-inner-spin-button,
+        .pessoas-control input::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .label-unidade {
+            font-size: 0.6rem;
+            font-weight: 700;
+            opacity: 0.6;
+            text-transform: uppercase;
         }
 
         .dia-card.active { 
@@ -143,8 +215,136 @@
         th { text-align: left; border-bottom: 2px solid var(--iasd-gold); padding: 10px; }
         td { padding: 10px; border-bottom: 1px solid var(--border); }
 
+
+        /* Balão Estilizado (Pop-up) */
+        .menu-contexto {
+            display: none; /* Escondido por padrão */
+            position: absolute;
+            z-index: 1000;
+            width: 160px;
+            background-color: #242832;
+            background-image: linear-gradient(139deg, #242832 0%, #251c28 100%);
+            border-radius: 8px;
+            padding: 8px 0;
+            box-shadow: 0 10px 15px rgba(0,0,0,0.3);
+        }
+
+        .menu-contexto ul { list-style: none; margin: 0; padding: 0; }
+
+        .menu-contexto li {
+            padding: 8px 12px;
+            color: #7e8590;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: 0.2s;
+        }
+
+        .menu-contexto li:hover { background: #5353ff; color: #fff; }
+        .menu-contexto li.delete:hover { background: #8e2a2a; }
+
+        /* Indicador de Atenção */
+        .alerta-conflito {
+            width: 8px;
+            height: 8px;
+            background: #e53e3e;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+            animation: pulse 1.5s infinite;
+        }
+
+        .nome-container {
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .nome-container:hover { background: rgba(0, 51, 102, 0.05); }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
         @media (max-width: 600px) {
             .grid-inputs { grid-template-columns: 1fr; }
+        }
+        /* Botão Voltar Estilizado */
+        .btn-voltar-container {
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+
+        .button-back {
+            background-color: transparent;
+            color: var(--iasd-blue);
+            width: 8.5em;
+            height: 2.9em;
+            border: var(--iasd-blue) 0.15em solid; /* Borda um pouco mais fina para elegância */
+            border-radius: 11px;
+            text-align: right;
+            transition: all 0.5s ease;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            cursor: pointer;
+            font-weight: 600;
+            padding: 0;
+        }
+
+        .button-back:hover {
+            background-color: var(--iasd-blue);
+            color: #fff;
+        }
+
+        .button-back svg {
+            width: 1.4em;
+            left: 0.8em;
+            position: absolute;
+            transition: all 0.5s ease;
+            /* Invertendo a seta para apontar para a esquerda */
+            transform: rotate(180deg); 
+        }
+
+        .button-back:hover svg {
+            transform: rotate(180deg) translateX(5px);
+            stroke: #fff;
+        }
+
+        .button-back .text {
+            margin: 0 1.2em;
+        }
+
+        /* Estilização do aviso de conflito dentro do balão escuro */
+        .conflito-info {
+            background: rgba(255, 255, 255, 0.1); /* Fundo levemente claro para destacar do preto */
+            border-bottom: 1px solid rgba(255, 77, 77, 0.3);
+            padding: 12px;
+            margin-bottom: 5px;
+            border-radius: 8px 8px 0 0;
+            color: #ff8080; /* Vermelho claro/salmão para leitura no fundo escuro */
+            font-size: 0.75rem;
+            line-height: 1.4;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .conflito-info strong {
+            color: #ff4d4d; /* Vermelho mais vivo para o "ATENÇÃO" */
+            display: block;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            font-size: 0.65rem;
+            letter-spacing: 1px;
         }
     </style>
 </head>
@@ -156,10 +356,13 @@
 </header>
 
 <div class="container">
-    <div style="margin-bottom: 15px;">
-        <a href="javascript:void(0)" onclick="voltarParaMembros()" style="text-decoration: none; color: var(--iasd-blue); font-weight: bold;">
-            ← Voltar para Gestão de Membros
-        </a>
+   <div class="btn-voltar-container" style="margin-bottom: 20px;">
+        <button class="button-back" onclick="voltarParaMembros()">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12h15m0 0l-6.75-6.75M19.5 12l-6.75 6.75" />
+            </svg>
+            <div class="text">Voltar</div>
+        </button>
     </div>
     
     <div class="card">
@@ -187,17 +390,65 @@
     <div class="card">
         <div class="section-header"><h3>⚙️ Frequência (Dias e Pessoas)</h3></div>
         <div class="frequencia-grid">
-            <div class="dia-card active" onclick="toggleDia(this, 0)" data-dia="0"><span class="nome">Dom</span><span class="label-pess">Pess.</span><input type="number" value="1" onclick="event.stopPropagation()"></div>
-            <div class="dia-card" onclick="toggleDia(this, 1)" data-dia="1"><span class="nome">Seg</span><span class="label-pess">Pess.</span><input type="number" value="1" onclick="event.stopPropagation()"></div>
-            <div class="dia-card" onclick="toggleDia(this, 2)" data-dia="2"><span class="nome">Ter</span><span class="label-pess">Pess.</span><input type="number" value="1" onclick="event.stopPropagation()"></div>
-            <div class="dia-card active" onclick="toggleDia(this, 3)" data-dia="3"><span class="nome">Qua</span><span class="label-pess">Pess.</span><input type="number" value="1" onclick="event.stopPropagation()"></div>
-            <div class="dia-card" onclick="toggleDia(this, 4)" data-dia="4"><span class="nome">Qui</span><span class="label-pess">Pess.</span><input type="number" value="1" onclick="event.stopPropagation()"></div>
-            <div class="dia-card" onclick="toggleDia(this, 5)" data-dia="5"><span class="nome">Sex</span><span class="label-pess">Pess.</span><input type="number" value="1" onclick="event.stopPropagation()"></div>
-            <div class="dia-card active" onclick="toggleDia(this, 6)" data-dia="6"><span class="nome">Sáb</span><span class="label-pess">Pess.</span><input type="number" value="1" onclick="event.stopPropagation()"></div>
+            <div class="dia-bubble active" onclick="toggleDia(this, 0)" data-dia="0">
+                <span class="dia-nome">Dom</span>
+                <div class="pessoas-control" onclick="event.stopPropagation()">
+                    <input type="number" value="1" min="1">
+                    <span class="label-unidade">Pessoa</span>
+                </div>
+            </div>
+
+            <div class="dia-bubble" onclick="toggleDia(this, 1)" data-dia="1">
+                <span class="dia-nome">Seg</span>
+                <div class="pessoas-control" onclick="event.stopPropagation()">
+                    <input type="number" value="1" min="1">
+                    <span class="label-unidade">Pessoa</span>
+                </div>
+            </div>
+
+            <div class="dia-bubble" onclick="toggleDia(this, 2)" data-dia="2">
+                <span class="dia-nome">Ter</span>
+                <div class="pessoas-control" onclick="event.stopPropagation()">
+                    <input type="number" value="1" min="1">
+                    <span class="label-unidade">Pessoa</span>
+                </div>
+            </div>
+
+            <div class="dia-bubble active" onclick="toggleDia(this, 3)" data-dia="3">
+                <span class="dia-nome">Qua</span>
+                <div class="pessoas-control" onclick="event.stopPropagation()">
+                    <input type="number" value="1" min="1">
+                    <span class="label-unidade">Pessoa</span>
+                </div>
+            </div>
+
+            <div class="dia-bubble" onclick="toggleDia(this, 4)" data-dia="4">
+                <span class="dia-nome">Qui</span>
+                <div class="pessoas-control" onclick="event.stopPropagation()">
+                    <input type="number" value="1" min="1">
+                    <span class="label-unidade">Pessoa</span>
+                </div>
+            </div>
+
+            <div class="dia-bubble" onclick="toggleDia(this, 5)" data-dia="5">
+                <span class="dia-nome">Sex</span>
+                <div class="pessoas-control" onclick="event.stopPropagation()">
+                    <input type="number" value="1" min="1">
+                    <span class="label-unidade">Pessoa</span>
+                </div>
+            </div>
+
+            <div class="dia-bubble active" onclick="toggleDia(this, 6)" data-dia="6">
+                <span class="dia-nome">Sáb</span>
+                <div class="pessoas-control" onclick="event.stopPropagation()">
+                    <input type="number" value="1" min="1">
+                    <span class="label-unidade">Pessoa</span>
+                </div>
+            </div>
         </div>
     </div>
 
-    <button class="btn-iasd" onclick="gerarEscala()">Gerar Escala Inteligente</button>
+    <button class="btn-iasd" onclick="gerarEscala()">Gerar Escala</button>
 
     <div class="card" id="cardResultado" style="margin-top: 20px; display: none;">
         <div class="section-header"><h3>📅 Escala Gerada</h3></div>
@@ -207,21 +458,27 @@
                     <th>Data</th>
                     <th>Dia</th>
                     <th>Responsáveis</th>
-                    <th>Ações</th>
                 </tr>
             </thead>
             <tbody id="resultadoEscala"></tbody>
         </table>
+
+        <div style="margin-top: 20px; text-align: center;">
+        <button onclick="salvarEscalaNoFirebase()" class="btn-iasd" style="background-color: #28a745;">
+            💾 Salvar Escala Oficial
+        </button>
+    </div>
+
     </div>
 </div>
 
 <script>
-    let listaMembrosParaAutocomplete = [];
+    let listaMembrosOficiais = []; 
     
     const firebaseConfig = {
         apiKey: "AIzaSyBYtUnqsokLE1RnK1TGbswbnsLXPpvvdc0",
         authDomain: "escala7igreja.firebaseapp.com",
-        databaseURL: "https://escala7igreja-default-rtdb.firebaseio.com", // Verifique se esta URL está correta no seu console
+        databaseURL: "https://escala7igreja-default-rtdb.firebaseio.com",
         projectId: "escala7igreja",
         storageBucket: "escala7igreja.firebasestorage.app",
         messagingSenderId: "778312493987",
@@ -231,7 +488,7 @@
     if (!firebase.apps.length) {
         firebase.initializeApp(firebaseConfig);
     }
-    const db = firebase.database(); // VOLTANDO PARA REALTIME
+    const db = firebase.database();
 
     const urlParams = new URLSearchParams(window.location.search);
     const deptoLogado = urlParams.get('depto') || "Geral";
@@ -265,9 +522,17 @@
 
     window.onload = () => {
         document.getElementById('displayDepto').innerText = deptoLogado;
+        if(document.getElementById('nomeDeptoBotao')) {
+            document.getElementById('nomeDeptoBotao').innerText = deptoLogado;
+        }
+        
         const d = new Date();
-        document.getElementById('mesRef').value = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0');
+        const ano = d.getFullYear();
+        const mes = String(d.getMonth() + 1).padStart(2, '0'); // Garante 01, 02...
+        
+        document.getElementById('mesRef').value = `${ano}-${mes}`;
         atualizarDatasAutomaticas();
+        carregarEscalaSalva();
     };
 
     async function gerarEscala() {
@@ -277,25 +542,25 @@
         const dataFim = new Date(dataFimVal + 'T00:00:00');
 
         try {
-            // 1. Puxa Membros do caminho correto 'equipes_deptos'
+            // 1. CARREGA TODAS AS ESCALAS DO MÊS PARA VERIFICAR CONFLITOS
+            const mesRef = document.getElementById('mesRef').value;
+            const snapshotTodasEscalas = await db.ref("escalas_salvas").once("value");
+            const todasEscalasDoMes = snapshotTodasEscalas.val() || {};
+
             const snapshotMembros = await db.ref("equipes_deptos").once("value");
             let voluntarios = [];
-            listaMembrosOficiais = []; // Reinicia a lista para o autocomplete
+            listaMembrosOficiais = []; 
             
             snapshotMembros.forEach(child => {
                 const dados = child.val();
-                
                 if (dados.departamento === deptoLogado) {
                     const nomeFinal = dados.nomeExibicao || dados.nomeCompleto || "Sem Nome";
-                    
                     voluntarios.push({
                         id: child.key,
                         nome: nomeFinal, 
                         vezesEscalado: 0,
                         disponibilidade: dados.disponibilidade || [] 
                     });
-
-                    // Alimenta a lista do autocomplete para o botão lápis
                     if(!listaMembrosOficiais.includes(nomeFinal)) {
                         listaMembrosOficiais.push(nomeFinal);
                     }
@@ -314,34 +579,85 @@
 
             while (dataAtual <= dataFim) {
                 const diaSemana = dataAtual.getDay();
-                
+                const dataString = dataAtual.toLocaleDateString('pt-BR');
+
                 if (diasAtivos.includes(diaSemana)) {
-                    let aptos = voluntarios.filter(v => {
-                        const disp = Array.isArray(v.disponibilidade) ? v.disponibilidade : Object.values(v.disponibilidade);
-                        return disp.map(Number).includes(diaSemana);
-                    });
+                    const bubbleDia = document.querySelector(`.dia-bubble[data-dia="${diaSemana}"]`);
+                    const qtdPessoasInput = bubbleDia ? bubbleDia.querySelector('input').value : 1;
+                    const qtdPessoas = parseInt(qtdPessoasInput) || 1;
 
-                    if (aptos.length > 1) {
-                        aptos = aptos.filter(v => v.id !== ultimoSorteadoId);
-                    }
+                    let escaladosNoDia = [];
 
-                    aptos.sort((a, b) => a.vezesEscalado - b.vezesEscalado);
+                    for (let i = 0; i < qtdPessoas; i++) {
+                        // Filtra aptos pela disponibilidade e evita duplicar no mesmo dia
+                        let aptos = voluntarios.filter(v => {
+                            const disp = Array.isArray(v.disponibilidade) ? v.disponibilidade : Object.values(v.disponibilidade);
+                            return disp.map(Number).includes(diaSemana) && !escaladosNoDia.includes(v.id);
+                        });
 
-                    if (aptos.length > 0) {
-                        const sorteado = aptos[0];
-                        sorteado.vezesEscalado++;
-                        ultimoSorteadoId = sorteado.id;
+                        if (aptos.length > 0) {
+                            // --- VERIFICAÇÃO DE CONFLITO EM OUTROS DEPTOS ---
+                            let listaCandidatos = aptos.map(v => {
+                                let deptosConflitantes = [];
+                                Object.keys(todasEscalasDoMes).forEach(depto => {
+                                    if (depto !== deptoLogado && todasEscalasDoMes[depto][mesRef]) {
+                                        const jaEscalado = todasEscalasDoMes[depto][mesRef].corpo.some(item => 
+                                            item.data === dataString && item.nome === v.nome
+                                        );
+                                        if (jaEscalado) deptosConflitantes.push(depto);
+                                    }
+                                });
+                                return { ...v, conflitos: deptosConflitantes };
+                            });
 
-                        corpoTabela += `
-                            <tr>
-                                <td>${dataAtual.toLocaleDateString('pt-BR')}</td>
-                                <td style="color: #a0aec0;">${diasNome[diaSemana]}</td>
-                                <td style="font-weight: 500; color: var(--iasd-blue);">${sorteado.nome}</td>
-                                <td>
-                                    <button onclick="editarLinha(this)" style="background:none; border:none; cursor:pointer; color:#f6ad55; font-size:1.2rem; margin-right:10px;">✎</button>
-                                    <button onclick="excluirLinha(this)" style="background:none; border:none; cursor:pointer; color:#e53e3e; font-size:1.2rem;">🗑</button>
-                                </td>
-                            </tr>`;
+                            // Tenta primeiro quem NÃO tem conflitos
+                            let semConflito = listaCandidatos.filter(v => v.conflitos.length === 0);
+                            
+                            // Se não houver ninguém sem conflito, usa a lista geral (redundância)
+                            let listaFinal = semConflito.length > 0 ? semConflito : listaCandidatos;
+
+                            // Escolhe quem trabalhou menos (e aplica sorteio aleatório entre eles)
+                            const minEscalas = Math.min(...listaFinal.map(v => v.vezesEscalado));
+                            let candidatosFinais = listaFinal.filter(v => v.vezesEscalado === minEscalas);
+                            
+                            // Evita repetir o último sorteado do dia anterior se houver opção
+                            if (candidatosFinais.length > 1) {
+                                candidatosFinais = candidatosFinais.filter(v => v.id !== ultimoSorteadoId);
+                            }
+
+                            const sorteado = candidatosFinais[Math.floor(Math.random() * candidatosFinais.length)];
+
+                            sorteado.vezesEscalado++;
+                            ultimoSorteadoId = sorteado.id;
+                            escaladosNoDia.push(sorteado.id);
+
+                            const temAlerta = sorteado.conflitos && sorteado.conflitos.length > 0;
+                            const textoConflito = temAlerta ? `⚠️ Já escalado em: ${sorteado.conflitos.join(', ')}` : '';
+
+                            corpoTabela += `
+                                <tr>
+                                    <td>${i === 0 ? `<strong>${dataString}</strong>` : ''}</td>
+                                    <td style="color: #718096;">${i === 0 ? diasNome[diaSemana] : ''}</td>
+                                    <td>
+                                        <div class="nome-container" 
+                                            onclick="toggleMenu(event, this)" 
+                                            data-conflitos="${temAlerta ? sorteado.conflitos.join(', ') : ''}">
+                                            
+                                            ${temAlerta ? '<span class="alerta-conflito"></span>' : ''}
+                                            <span class="texto-nome" style="font-weight: 600; color: ${temAlerta ? '#e53e3e' : 'var(--iasd-blue)'};">
+                                                ${sorteado.nome}
+                                            </span>
+                                        </div>
+                                        
+                                        <div class="menu-contexto">
+                                            <div class="conflito-info" style="display:none;"></div> <ul>
+                                                <li onclick="ativarEdicao(this)"><span>✎</span> Editar</li>
+                                                <li class="delete" onclick="excluirLinha(this)"><span>🗑</span> Excluir</li>
+                                            </ul>
+                                        </div>
+                                    </td>
+                                </tr>`;
+                        }
                     }
                 }
                 dataAtual.setDate(dataAtual.getDate() + 1);
@@ -351,47 +667,225 @@
             document.getElementById('cardResultado').style.display = 'block';
 
         } catch (error) {
-            console.error("Erro Realtime:", error);
+            console.error("Erro ao gerar escala:", error);
             alert("Erro ao ler dados: " + error.message);
         }
+    }
+
+    // --- FUNÇÕES DE CONTROLE DO MENU E EDIÇÃO ---
+
+    function toggleMenu(event, elemento) {
+        event.stopPropagation();
+        
+        // Fecha outros menus
+        document.querySelectorAll('.menu-contexto').forEach(m => m.style.display = 'none');
+
+        const menu = elemento.nextElementSibling;
+        const conflitos = elemento.getAttribute('data-conflitos');
+        
+        // Verifica se já existe a div de aviso, se não, cria
+        let areaAviso = menu.querySelector('.conflito-info');
+        if (!areaAviso) {
+            areaAviso = document.createElement('div');
+            areaAviso.className = 'conflito-info';
+            menu.prepend(areaAviso);
+        }
+
+        if (conflitos && conflitos.trim() !== "") {
+            areaAviso.innerHTML = `<strong>⚠️ Atenção</strong>Já escalado em: ${conflitos}`;
+            areaAviso.style.display = 'block';
+        } else {
+            areaAviso.style.display = 'none';
+        }
+
+        menu.style.display = 'block';
+
+        const fecharMenu = () => {
+            menu.style.display = 'none';
+            document.removeEventListener('click', fecharMenu);
+        };
+        document.addEventListener('click', fecharMenu);
+    }
+
+    function ativarEdicao(itemMenu) {
+        const td = itemMenu.closest('td');
+        const containerNome = td.querySelector('.nome-container');
+        const textoNomeSpan = containerNome.querySelector('.texto-nome');
+        const nomeAtual = textoNomeSpan.innerText;
+
+        // Fecha o menu
+        td.querySelector('.menu-contexto').style.display = 'none';
+
+        const idLista = "lista_" + Math.floor(Math.random() * 1000);
+        const opcoes = listaMembrosOficiais.map(n => `<option value="${n}">`).join('');
+
+        // Substitui o conteúdo do container apenas pelo input
+        containerNome.innerHTML = `
+            <div style="display: flex; gap: 5px; width: 100%;" onclick="event.stopPropagation()">
+                <input type="text" list="${idLista}" id="inputEdit" value="${nomeAtual}" 
+                    style="padding: 5px; border: 1px solid var(--iasd-gold); border-radius: 4px; width: 120px; font-size: 0.8rem;">
+                <datalist id="${idLista}">${opcoes}</datalist>
+                <button onclick="confirmarEdicao(this)" style="background: var(--iasd-blue); color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">OK</button>
+            </div>
+        `;
+        
+        // Remove temporariamente o clique do container para não abrir o menu enquanto edita
+        containerNome.onclick = (e) => e.stopPropagation();
+    }
+
+    function confirmarEdicao(botao) {
+        const novoNome = botao.parentElement.querySelector('#inputEdit').value;
+        const containerNome = botao.closest('.nome-container');
+        
+        if (novoNome.trim() !== "") {
+            // Restaura a estrutura original com o novo nome
+            containerNome.innerHTML = `<span class="texto-nome" style="font-weight: 500; color: var(--iasd-blue);">${novoNome}</span>`;
+            
+            // Devolve o evento de clique para o menu
+            setTimeout(() => {
+                containerNome.onclick = (event) => toggleMenu(event, containerNome);
+            }, 100);
+        }
+    }
+
+    function excluirLinha(itemMenu) {
+        // Para a propagação para não abrir o menu ou disparar outros cliques
+        if (event) event.stopPropagation();
+
+        if(confirm("Deseja remover este registro da escala?")) {
+            // Busca a linha (tr) mais próxima a partir do item clicado
+            const linha = itemMenu.closest('tr');
+            if (linha) {
+                linha.remove();
+            }
+        }
+        
+        // Fecha qualquer menu que esteja aberto
+        document.querySelectorAll('.menu-contexto').forEach(m => m.style.display = 'none');
     }
 
     function voltarParaMembros() {
         window.location.href = `membros.html?depto=${encodeURIComponent(deptoLogado)}`;
     }
 
-    function excluirLinha(botao) {
-        if(confirm("Deseja remover este registro da escala?")) {
-            botao.closest('tr').remove();
+    async function salvarEscalaNoFirebase() {
+        const mesRef = document.getElementById('mesRef').value; // Ex: 2024-05
+        const linhas = document.querySelectorAll('#resultadoEscala tr');
+        let dadosParaSalvar = [];
+
+        if (linhas.length === 0) return alert("Gere uma escala antes de salvar!");
+
+        linhas.forEach(linha => {
+            const data = linha.cells[0].innerText;
+            const diaSemana = linha.cells[1].innerText;
+            const nome = linha.querySelector('.texto-nome').innerText;
+            
+            dadosParaSalvar.push({ data, diaSemana, nome });
+        });
+
+        try {
+            // Salva usando o Mês e o Departamento como chave única
+            await db.ref("escalas_salvas").child(deptoLogado).child(mesRef).set({
+                ultimaAtualizacao: new Date().toISOString(),
+                corpo: dadosParaSalvar
+            });
+
+            alert("✅ Escala salva com sucesso! Agora você pode consultá-la ou editá-la quando quiser.");
+        } catch (error) {
+            console.error("Erro ao salvar:", error);
+            alert("Erro ao salvar escala.");
         }
     }
 
-    function editarLinha(botao) {
-        const linha = botao.closest('tr');
-        const celulaNome = linha.cells[2];
-        const nomeAtual = celulaNome.innerText;
+    async function carregarEscalaSalva() {
+        const mesRef = document.getElementById('mesRef').value;
+        
+        try {
+            const snapshot = await db.ref("escalas_salvas").child(deptoLogado).child(mesRef).once("value");
+            const dados = snapshot.val();
 
-        // Criar datalist dinâmico para o autocomplete
-        const idLista = "lista_" + Math.floor(Math.random() * 1000);
-        const opcoes = listaMembrosOficiais.map(n => `<option value="${n}">`).join('');
-
-        celulaNome.innerHTML = `
-            <div style="display: flex; gap: 5px;">
-                <input type="text" list="${idLista}" id="inputEdit" value="${nomeAtual}" 
-                    style="padding: 5px; border: 1px solid var(--iasd-gold); border-radius: 4px; width: 100%;">
-                <datalist id="${idLista}">${opcoes}</datalist>
-                <button onclick="confirmarEdicao(this)" style="background: var(--iasd-blue); color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">OK</button>
-            </div>
-        `;
+            if (dados && dados.corpo) {
+                let corpoTabela = "";
+                dados.corpo.forEach(item => {
+                    corpoTabela += `
+                        <tr>
+                            <td><strong>${item.data}</strong></td>
+                            <td style="color: #718096;">${item.diaSemana}</td>
+                            <td>
+                                <div class="nome-container" onclick="toggleMenu(event, this)">
+                                    <span class="texto-nome" style="font-weight: 600; color: var(--iasd-blue);">${item.nome}</span>
+                                </div>
+                                <div class="menu-contexto">
+                                    <ul>
+                                        <li onclick="ativarEdicao(this)"><span>✎</span> Editar</li>
+                                        <li class="delete" onclick="excluirLinha(this)"><span>🗑</span> Excluir</li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>`;
+                });
+                
+                document.getElementById('resultadoEscala').innerHTML = corpoTabela;
+                document.getElementById('cardResultado').style.display = 'block';
+                alert("📅 Escala salva encontrada e carregada!");
+            } else {
+                // Se não houver escala, apenas limpa para gerar uma nova
+                document.getElementById('cardResultado').style.display = 'none';
+            }
+        } catch (error) {
+            console.error("Erro ao carregar:", error);
+        }
     }
 
-    function confirmarEdicao(botao) {
-        const novoNome = botao.parentElement.querySelector('#inputEdit').value;
-        const celula = botao.closest('td');
-        if (novoNome.trim() !== "") {
-            celula.innerHTML = novoNome;
-            celula.style.fontWeight = "500";
-            celula.style.color = "var(--iasd-blue)";
+    async function carregarEscalaSalva() {
+        const mesRef = document.getElementById('mesRef').value; // Pega o mês selecionado (ex: 2026-02)
+        
+        // Mostra um aviso visual de que está buscando
+        const tabela = document.getElementById('resultadoEscala');
+        tabela.innerHTML = "<tr><td colspan='3' style='text-align:center;'>Buscando escala no banco de dados...</td></tr>";
+        document.getElementById('cardResultado').style.display = 'block';
+
+        try {
+            // Caminho: escalas_salvas > Som > 2026-02
+            const snapshot = await db.ref("escalas_salvas").child(deptoLogado).child(mesRef).once("value");
+            const dados = snapshot.val();
+
+            if (dados && dados.corpo) {
+                let corpoTabela = "";
+                
+                // "item" aqui terá: data, diaSemana e nome (conforme seu Firebase)
+                dados.corpo.forEach((item, index) => {
+                    // Verificamos se é a primeira linha de uma data para não repetir o texto da data/dia (opcional)
+                    const mostrarData = (index === 0 || dados.corpo[index-1].data !== item.data);
+
+                    corpoTabela += `
+                        <tr>
+                            <td>${mostrarData ? `<strong>${item.data}</strong>` : ''}</td>
+                            <td style="color: #718096;">${mostrarData ? item.diaSemana : ''}</td>
+                            <td>
+                                <div class="nome-container" onclick="toggleMenu(event, this)">
+                                    <span class="texto-nome" style="font-weight: 600; color: var(--iasd-blue);">${item.nome}</span>
+                                </div>
+                                <div class="menu-contexto">
+                                    <ul>
+                                        <li onclick="ativarEdicao(this)"><span>✎</span> Editar</li>
+                                        <li class="delete" onclick="excluirLinha(this)"><span>🗑</span> Excluir</li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>`;
+                });
+                
+                tabela.innerHTML = corpoTabela;
+                console.log("Escala carregada do Firebase!");
+            } else {
+                // Se não encontrar nada, esconde o card e avisa que pode gerar uma nova
+                document.getElementById('cardResultado').style.display = 'none';
+                console.log("Nenhuma escala salva encontrada para este mês.");
+            }
+        } catch (error) {
+            console.error("Erro ao carregar:", error);
+            alert("Erro ao carregar escala salva.");
         }
     }
 </script>
