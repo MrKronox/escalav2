@@ -733,15 +733,28 @@
         containerNome.onclick = (e) => e.stopPropagation();
     }
 
-    function confirmarEdicao(botao) {
+    async function confirmarEdicao(botao) {
         const novoNome = botao.parentElement.querySelector('#inputEdit').value;
         const containerNome = botao.closest('.nome-container');
+        const dataReal = containerNome.getAttribute('data-data-real');
         
         if (novoNome.trim() !== "") {
-            // Restaura a estrutura original com o novo nome
-            containerNome.innerHTML = `<span class="texto-nome" style="font-weight: 500; color: var(--iasd-blue);">${novoNome}</span>`;
+            // 1. Verifica conflitos para o NOVO nome inserido
+            const conflitos = await verificarNovoConflito(novoNome, dataReal);
+            const temAlerta = conflitos.length > 0;
+
+            // 2. Atualiza os metadados do container
+            containerNome.setAttribute('data-conflitos', temAlerta ? conflitos.join(', ') : '');
+
+            // 3. Reconstrói o HTML interno (Limpando ou Adicionando a bolinha)
+            containerNome.innerHTML = `
+                ${temAlerta ? '<span class="alerta-conflito"></span>' : ''}
+                <span class="texto-nome" style="font-weight: 600; color: ${temAlerta ? '#e53e3e' : 'var(--iasd-blue)'};">
+                    ${novoNome}
+                </span>
+            `;
             
-            // Devolve o evento de clique para o menu
+            // 4. Devolve o evento de clique para o menu
             setTimeout(() => {
                 containerNome.onclick = (event) => toggleMenu(event, containerNome);
             }, 100);
@@ -769,28 +782,37 @@
     }
 
     async function salvarEscalaNoFirebase() {
-        const mesRef = document.getElementById('mesRef').value; // Ex: 2024-05
+        const mesRef = document.getElementById('mesRef').value;
         const linhas = document.querySelectorAll('#resultadoEscala tr');
         let dadosParaSalvar = [];
 
         if (linhas.length === 0) return alert("Gere uma escala antes de salvar!");
 
         linhas.forEach(linha => {
-            const data = linha.cells[0].innerText;
-            const diaSemana = linha.cells[1].innerText;
-            const nome = linha.querySelector('.texto-nome').innerText;
+            // BUSCA A DATA REAL: Tenta pegar do atributo oculto; se não existir (ex: linhas vazias), pega o texto
+            const containerNome = linha.querySelector('.nome-container');
+            const dataCompleta = containerNome ? containerNome.getAttribute('data-data-real') : linha.cells[0].innerText.replace(/<[^>]*>?/gm, '');
             
-            dadosParaSalvar.push({ data, diaSemana, nome });
+            const diaSemana = linha.cells[1].innerText;
+            const nomeElemento = linha.querySelector('.texto-nome');
+            
+            if (nomeElemento) {
+                const nome = nomeElemento.innerText;
+                dadosParaSalvar.push({ 
+                    data: dataCompleta, // Aqui garantimos o formato "DD/MM/AAAA"
+                    diaSemana, 
+                    nome 
+                });
+            }
         });
 
         try {
-            // Salva usando o Mês e o Departamento como chave única
             await db.ref("escalas_salvas").child(deptoLogado).child(mesRef).set({
                 ultimaAtualizacao: new Date().toISOString(),
                 corpo: dadosParaSalvar
             });
 
-            alert("✅ Escala salva com sucesso! Agora você pode consultá-la ou editá-la quando quiser.");
+            alert("✅ Escala salva com sucesso! O ano foi preservado para evitar conflitos futuros.");
         } catch (error) {
             console.error("Erro ao salvar:", error);
             alert("Erro ao salvar escala.");
@@ -809,18 +831,15 @@
                 dados.corpo.forEach(item => {
                     corpoTabela += `
                         <tr>
-                            <td><strong>${item.data}</strong></td>
-                            <td style="color: #718096;">${item.diaSemana}</td>
+                            <td>${mostrarData ? `<strong>${item.data}</strong>` : ''}</td>
+                            <td style="color: #718096;">${mostrarData ? item.diaSemana : ''}</td>
                             <td>
-                                <div class="nome-container" onclick="toggleMenu(event, this)">
-                                    <span class="texto-nome" style="font-weight: 600; color: var(--iasd-blue);">${item.nome}</span>
+                                <div class="nome-container" 
+                                    onclick="toggleMenu(event, this)" 
+                                    data-conflitos="" 
+                                    data-data-real="${item.data}"> <span class="texto-nome" style="font-weight: 600; color: var(--iasd-blue);">${item.nome}</span>
                                 </div>
-                                <div class="menu-contexto">
-                                    <ul>
-                                        <li onclick="ativarEdicao(this)"><span>✎</span> Editar</li>
-                                        <li class="delete" onclick="excluirLinha(this)"><span>🗑</span> Excluir</li>
-                                    </ul>
-                                </div>
+                                ...
                             </td>
                         </tr>`;
                 });
@@ -887,6 +906,23 @@
             console.error("Erro ao carregar:", error);
             alert("Erro ao carregar escala salva.");
         }
+    }
+
+    async function verificarNovoConflito(nome, dataReal) {
+        const mesRef = document.getElementById('mesRef').value;
+        const snapshot = await db.ref("escalas_salvas").once("value");
+        const todasEscalas = snapshot.val() || {};
+        let conflitos = [];
+
+        Object.keys(todasEscalas).forEach(depto => {
+            if (depto !== deptoLogado && todasEscalas[depto][mesRef]) {
+                const jaEscalado = todasEscalas[depto][mesRef].corpo.some(item => 
+                    item.data === dataReal && item.nome === nome
+                );
+                if (jaEscalado) conflitos.push(depto);
+            }
+        });
+        return conflitos;
     }
 </script>
 </body>
