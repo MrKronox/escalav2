@@ -6,6 +6,7 @@
     <title>Gerador de Escalas - IASD</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root { 
             --iasd-blue: #003366; 
@@ -346,6 +347,46 @@
             font-size: 0.65rem;
             letter-spacing: 1px;
         }
+        /* Container que será transformado em imagem download da escala(fica fora da tela) */
+        #escala-export {
+            position: absolute;
+            left: -9999px; /* Mantém fora da visualização do usuário */
+            width: 600px;
+            padding: 40px;
+            background-color: white; /* Cor de segurança */
+            background-size: cover;
+            background-position: center;
+            border-radius: 10px;
+            font-family: sans-serif;
+        }
+
+        /* Camada de transparência para destacar o texto */
+        .overlay-export {
+            background: rgba(255, 255, 255, 0.85); 
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        #escala-export h2 {
+            color: var(--iasd-blue);
+            text-align: center;
+            text-transform: uppercase;
+            border-bottom: 2px solid var(--iasd-gold);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        #escala-export table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        #escala-export th, #escala-export td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #cbd5e0;
+        }
     </style>
 </head>
 <body>
@@ -364,6 +405,15 @@
             <div class="text">Voltar</div>
         </button>
     </div>
+    <div class="btn-voltar-container">
+        <button class="button-back" onclick="window.location.href='index.html'" style="width: 8em;">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="transform: rotate(0deg);">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+            </svg>
+            <span class="text">Home</span>
+        </button>
+    </div>
+
     
     <div class="card">
         <div class="section-header"><h3>📖 Período e Departamento</h3></div>
@@ -473,6 +523,18 @@
 </div>
 
 <script>
+    const imagensDeptos = {
+        "Escola Sabatina": "sabatina.png",
+        "Recepção": "recepcao.jpg",
+        "Pregação": "pregacao.jpg",
+        "Técnico de Som": "mesa-som.png",
+        "Louvor Especial": "louvor.png",
+        "Louvor Congregacional": "louvor.png",
+        "Limpeza": "limpeza.jpeg",
+        "Infantil": "infantil.jpg",
+        "Diáconos": "diacono.jpg"
+    };
+
     let listaMembrosOficiais = []; 
     
     const firebaseConfig = {
@@ -492,8 +554,26 @@
 
     const urlParams = new URLSearchParams(window.location.search);
     const deptoLogado = urlParams.get('depto') || "Geral";
+    let deptoLogadoLimpo = deptoLogado.replace(/\./g, "").trim();
     let diasAtivos = [0, 3, 6];
 
+    // --- INICIALIZAÇÃO ---
+    window.onload = () => {
+        document.getElementById('displayDepto').innerText = deptoLogado;
+        if(document.getElementById('nomeDeptoBotao')) {
+            document.getElementById('nomeDeptoBotao').innerText = deptoLogado;
+        }
+        
+        const d = new Date();
+        const ano = d.getFullYear();
+        const mes = String(d.getMonth() + 1).padStart(2, '0');
+        
+        document.getElementById('mesRef').value = `${ano}-${mes}`;
+        atualizarDatasAutomaticas();
+        carregarEscalaSalva(); // Carrega o que já existe no banco
+    };
+
+    // --- FUNÇÕES DE APOIO ---
     function toggleDia(card, diaIndex) {
         card.classList.toggle('active');
         const dia = parseInt(diaIndex);
@@ -520,29 +600,21 @@
         }
     }
 
-    window.onload = () => {
-        document.getElementById('displayDepto').innerText = deptoLogado;
-        if(document.getElementById('nomeDeptoBotao')) {
-            document.getElementById('nomeDeptoBotao').innerText = deptoLogado;
-        }
-        
-        const d = new Date();
-        const ano = d.getFullYear();
-        const mes = String(d.getMonth() + 1).padStart(2, '0'); // Garante 01, 02...
-        
-        document.getElementById('mesRef').value = `${ano}-${mes}`;
-        atualizarDatasAutomaticas();
-        carregarEscalaSalva();
-    };
-
+    // --- LÓGICA DE GERAÇÃO ---
     async function gerarEscala() {
         const dataInicioVal = document.getElementById('dataInicio').value;
         const dataFimVal = document.getElementById('dataFim').value;
+        
+        if (!dataInicioVal || !dataFimVal) return alert("Selecione o período da escala.");
+
         const dataInicio = new Date(dataInicioVal + 'T00:00:00');
         const dataFim = new Date(dataFimVal + 'T00:00:00');
 
         try {
             const mesRef = document.getElementById('mesRef').value;
+            if (!mesRef) return alert("Selecione o mês de referência.");
+
+            // 1. BUSCA DE DADOS NO FIREBASE
             const snapshotTodasEscalas = await db.ref("escalas_salvas").once("value");
             const todasEscalasDoMes = snapshotTodasEscalas.val() || {};
 
@@ -557,99 +629,94 @@
                     voluntarios.push({
                         id: child.key,
                         nome: nomeFinal, 
-                        vezesEscalado: 0,
+                        vezesEscaladoNoMes: 0, // Contador para equilíbrio mensal
                         disponibilidade: dados.disponibilidade || [] 
                     });
-                    if(!listaMembrosOficiais.includes(nomeFinal)) {
-                        listaMembrosOficiais.push(nomeFinal);
-                    }
+                    if(!listaMembrosOficiais.includes(nomeFinal)) listaMembrosOficiais.push(nomeFinal);
                 }
             });
 
-            if (voluntarios.length === 0) {
-                alert("Nenhum membro encontrado para: " + deptoLogado);
-                return;
-            }
+            if (voluntarios.length === 0) return alert("Nenhum membro encontrado para este departamento.");
 
+            // 2. CONFIGURAÇÕES INICIAIS DO SORTEIO
             let corpoTabela = "";
             let dataAtual = new Date(dataInicio);
             let ultimoSorteadoId = null;
             const diasNome = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
+            // 3. LOOP PRINCIPAL POR DATA
             while (dataAtual <= dataFim) {
                 const diaSemana = dataAtual.getDay();
-                
-                // --- AJUSTE DE DATA ---
-                // dataParaBusca: Usada para comparar com o Firebase (contém o ano)
                 const dataParaBusca = dataAtual.toLocaleDateString('pt-BR'); 
-                
-                // dataParaExibicao: Usada para mostrar na tabela (sem o ano)
-                const dia = String(dataAtual.getDate()).padStart(2, '0');
-                const mes = String(dataAtual.getMonth() + 1).padStart(2, '0');
-                const dataParaExibicao = `${dia}/${mes}`;
+                const dataParaExibicao = `${String(dataAtual.getDate()).padStart(2, '0')}/${String(dataAtual.getMonth() + 1).padStart(2, '0')}`;
 
                 if (diasAtivos.includes(diaSemana)) {
                     const bubbleDia = document.querySelector(`.dia-bubble[data-dia="${diaSemana}"]`);
-                    const qtdPessoasInput = bubbleDia ? bubbleDia.querySelector('input').value : 1;
-                    const qtdPessoas = parseInt(qtdPessoasInput) || 1;
-
-                    let escaladosNoDia = [];
+                    const qtdPessoas = parseInt(bubbleDia ? bubbleDia.querySelector('input').value : 1) || 1;
+                    let escaladosNoDiaLocal = [];
 
                     for (let i = 0; i < qtdPessoas; i++) {
+                        // FILTRO 1: Disponibilidade e não estar repetido na mesma linha
                         let aptos = voluntarios.filter(v => {
                             const disp = Array.isArray(v.disponibilidade) ? v.disponibilidade : Object.values(v.disponibilidade);
-                            return disp.map(Number).includes(diaSemana) && !escaladosNoDia.includes(v.id);
+                            return disp.map(Number).includes(diaSemana) && !escaladosNoDiaLocal.includes(v.id);
                         });
 
                         if (aptos.length > 0) {
-                            let listaCandidatos = aptos.map(v => {
-                                let deptosConflitantes = [];
+                            // --- LÓGICA DE JUSTIÇA E PESO (O CORAÇÃO DO SISTEMA) ---
+                            let candidatosRankeados = aptos.map(v => {
+                                let conflitosNoDia = [];
+                                // Verifica se já está em outros departamentos hoje
                                 Object.keys(todasEscalasDoMes).forEach(depto => {
                                     if (depto !== deptoLogado && todasEscalasDoMes[depto][mesRef]) {
-                                        // Compara usando a data com ano para garantir o match no banco
-                                        const jaEscalado = todasEscalasDoMes[depto][mesRef].corpo.some(item => 
+                                        const jaEscaladoEmOutro = todasEscalasDoMes[depto][mesRef].corpo?.some(item => 
                                             item.data === dataParaBusca && item.nome === v.nome
                                         );
-                                        if (jaEscalado) deptosConflitantes.push(depto);
+                                        if (jaEscaladoEmOutro) conflitosNoDia.push(depto);
                                     }
                                 });
-                                return { ...v, conflitos: deptosConflitantes };
+
+                                // CÁLCULO DE PESO: Quanto MENOR o valor, maior a chance.
+                                // Conflitos pesam muito (50 pontos), carga mensal pesa moderado (10 pontos).
+                                let pesoJustica = (v.vezesEscaladoNoMes * 10) + (conflitosNoDia.length * 50);
+                                
+                                // Penaliza levemente se foi o último sorteado (evita repetição seguida)
+                                if (v.id === ultimoSorteadoId) pesoJustica += 25;
+
+                                return { ...v, peso: pesoJustica, conflitosAtuais: conflitosNoDia };
                             });
 
-                            let semConflito = listaCandidatos.filter(v => v.conflitos.length === 0);
-                            let listaFinal = semConflito.length > 0 ? semConflito : listaCandidatos;
+                            // Ordena pelo menor peso (mais justo)
+                            candidatosRankeados.sort((a, b) => a.peso - b.peso);
 
-                            const minEscalas = Math.min(...listaFinal.map(v => v.vezesEscalado));
-                            let candidatosFinais = listaFinal.filter(v => v.vezesEscalado === minEscalas);
-                            
-                            if (candidatosFinais.length > 1) {
-                                candidatosFinais = candidatosFinais.filter(v => v.id !== ultimoSorteadoId);
-                            }
+                            // Sorteia entre os que empataram no menor peso para manter aleatoriedade
+                            const menorPesoEncontrado = candidatosRankeados[0].peso;
+                            const finalistas = candidatosRankeados.filter(c => c.peso === menorPesoEncontrado);
+                            const sorteado = finalistas[Math.floor(Math.random() * finalistas.length)];
 
-                            const sorteado = candidatosFinais[Math.floor(Math.random() * candidatosFinais.length)];
-
-                            sorteado.vezesEscalado++;
+                            // ATUALIZAÇÃO DE ESTADO
+                            const volRef = voluntarios.find(v => v.id === sorteado.id);
+                            volRef.vezesEscaladoNoMes++; // Incrementa carga mensal
                             ultimoSorteadoId = sorteado.id;
-                            escaladosNoDia.push(sorteado.id);
+                            escaladosNoDiaLocal.push(sorteado.id);
 
-                            const temAlerta = sorteado.conflitos && sorteado.conflitos.length > 0;
+                            const conflitoStr = sorteado.conflitosAtuais.join(', ');
+                            const temAlerta = sorteado.conflitosAtuais.length > 0;
 
+                            // 4. CONSTRUÇÃO DA LINHA NA TABELA
                             corpoTabela += `
                                 <tr>
                                     <td>${i === 0 ? `<strong>${dataParaExibicao}</strong>` : ''}</td>
                                     <td style="color: #718096;">${i === 0 ? diasNome[diaSemana] : ''}</td>
                                     <td>
-                                        <div class="nome-container" 
-                                            onclick="toggleMenu(event, this)" 
-                                            data-conflitos="${temAlerta ? sorteado.conflitos.join(', ') : ''}"
-                                            data-data-real="${dataParaBusca}"> ${temAlerta ? '<span class="alerta-conflito"></span>' : ''}
+                                        <div class="nome-container" onclick="toggleMenu(event, this)" 
+                                            data-conflitos="${conflitoStr}" data-data-real="${dataParaBusca}">
+                                            ${temAlerta ? '<span class="alerta-conflito"></span>' : ''}
                                             <span class="texto-nome" style="font-weight: 600; color: ${temAlerta ? '#e53e3e' : 'var(--iasd-blue)'};">
                                                 ${sorteado.nome}
                                             </span>
                                         </div>
-                                        
                                         <div class="menu-contexto">
-                                            <div class="conflito-info" style="display:none;"></div> 
                                             <ul>
                                                 <li onclick="ativarEdicao(this)"><span>✎</span> Editar</li>
                                                 <li class="delete" onclick="excluirLinha(this)"><span>🗑</span> Excluir</li>
@@ -662,228 +729,145 @@
                 }
                 dataAtual.setDate(dataAtual.getDate() + 1);
             }
-            
+
             document.getElementById('resultadoEscala').innerHTML = corpoTabela;
             document.getElementById('cardResultado').style.display = 'block';
-
-        } catch (error) {
-            console.error("Erro ao gerar escala:", error);
-            alert("Erro ao ler dados: " + error.message);
-        }
-    }
-
-    // --- FUNÇÕES DE CONTROLE DO MENU E EDIÇÃO ---
-
-    function toggleMenu(event, elemento) {
-        event.stopPropagation();
-        
-        // Fecha outros menus
-        document.querySelectorAll('.menu-contexto').forEach(m => m.style.display = 'none');
-
-        const menu = elemento.nextElementSibling;
-        const conflitos = elemento.getAttribute('data-conflitos');
-        
-        // Verifica se já existe a div de aviso, se não, cria
-        let areaAviso = menu.querySelector('.conflito-info');
-        if (!areaAviso) {
-            areaAviso = document.createElement('div');
-            areaAviso.className = 'conflito-info';
-            menu.prepend(areaAviso);
-        }
-
-        if (conflitos && conflitos.trim() !== "") {
-            areaAviso.innerHTML = `<strong>⚠️ Atenção</strong>Já escalado em: ${conflitos}`;
-            areaAviso.style.display = 'block';
-        } else {
-            areaAviso.style.display = 'none';
-        }
-
-        menu.style.display = 'block';
-
-        const fecharMenu = () => {
-            menu.style.display = 'none';
-            document.removeEventListener('click', fecharMenu);
-        };
-        document.addEventListener('click', fecharMenu);
-    }
-
-    function ativarEdicao(itemMenu) {
-        const td = itemMenu.closest('td');
-        const containerNome = td.querySelector('.nome-container');
-        const textoNomeSpan = containerNome.querySelector('.texto-nome');
-        const nomeAtual = textoNomeSpan.innerText;
-
-        // Fecha o menu
-        td.querySelector('.menu-contexto').style.display = 'none';
-
-        const idLista = "lista_" + Math.floor(Math.random() * 1000);
-        const opcoes = listaMembrosOficiais.map(n => `<option value="${n}">`).join('');
-
-        // Substitui o conteúdo do container apenas pelo input
-        containerNome.innerHTML = `
-            <div style="display: flex; gap: 5px; width: 100%;" onclick="event.stopPropagation()">
-                <input type="text" list="${idLista}" id="inputEdit" value="${nomeAtual}" 
-                    style="padding: 5px; border: 1px solid var(--iasd-gold); border-radius: 4px; width: 120px; font-size: 0.8rem;">
-                <datalist id="${idLista}">${opcoes}</datalist>
-                <button onclick="confirmarEdicao(this)" style="background: var(--iasd-blue); color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">OK</button>
-            </div>
-        `;
-        
-        // Remove temporariamente o clique do container para não abrir o menu enquanto edita
-        containerNome.onclick = (e) => e.stopPropagation();
-    }
-
-    async function confirmarEdicao(botao) {
-        const novoNome = botao.parentElement.querySelector('#inputEdit').value;
-        const containerNome = botao.closest('.nome-container');
-        const dataReal = containerNome.getAttribute('data-data-real');
-        
-        if (novoNome.trim() !== "") {
-            // 1. Verifica conflitos para o NOVO nome inserido
-            const conflitos = await verificarNovoConflito(novoNome, dataReal);
-            const temAlerta = conflitos.length > 0;
-
-            // 2. Atualiza os metadados do container
-            containerNome.setAttribute('data-conflitos', temAlerta ? conflitos.join(', ') : '');
-
-            // 3. Reconstrói o HTML interno (Limpando ou Adicionando a bolinha)
-            containerNome.innerHTML = `
-                ${temAlerta ? '<span class="alerta-conflito"></span>' : ''}
-                <span class="texto-nome" style="font-weight: 600; color: ${temAlerta ? '#e53e3e' : 'var(--iasd-blue)'};">
-                    ${novoNome}
-                </span>
-            `;
             
-            // 4. Devolve o evento de clique para o menu
-            setTimeout(() => {
-                containerNome.onclick = (event) => toggleMenu(event, containerNome);
-            }, 100);
-        }
-    }
+            // Opcional: Revalida visualmente os conflitos após gerar
+            if (typeof revalidarTodosOsConflitos === "function") revalidarTodosOsConflitos();
 
-    function excluirLinha(itemMenu) {
-        // Para a propagação para não abrir o menu ou disparar outros cliques
-        if (event) event.stopPropagation();
-
-        if(confirm("Deseja remover este registro da escala?")) {
-            // Busca a linha (tr) mais próxima a partir do item clicado
-            const linha = itemMenu.closest('tr');
-            if (linha) {
-                linha.remove();
-            }
+        } catch (e) { 
+            console.error("Falha na geração:", e); 
+            alert("Erro técnico ao gerar escala: " + e.message);
         }
-        
-        // Fecha qualquer menu que esteja aberto
-        document.querySelectorAll('.menu-contexto').forEach(m => m.style.display = 'none');
     }
 
     function voltarParaMembros() {
         window.location.href = `membros.html?depto=${encodeURIComponent(deptoLogado)}`;
     }
 
+
+    // --- SALVAMENTO E PERSISTÊNCIA ---
     async function salvarEscalaNoFirebase() {
         const mesRef = document.getElementById('mesRef').value;
+        if (!mesRef) return alert("Selecione o mês de referência.");
+
         const linhas = document.querySelectorAll('#resultadoEscala tr');
         let dadosParaSalvar = [];
 
-        if (linhas.length === 0) return alert("Gere uma escala antes de salvar!");
-
         linhas.forEach(linha => {
-            // BUSCA A DATA REAL: Tenta pegar do atributo oculto; se não existir (ex: linhas vazias), pega o texto
-            const containerNome = linha.querySelector('.nome-container');
-            const dataCompleta = containerNome ? containerNome.getAttribute('data-data-real') : linha.cells[0].innerText.replace(/<[^>]*>?/gm, '');
+            const container = linha.querySelector('.nome-container');
+            const textoNomeElement = linha.querySelector('.texto-nome');
             
-            const diaSemana = linha.cells[1].innerText;
-            const nomeElemento = linha.querySelector('.texto-nome');
-            
-            if (nomeElemento) {
-                const nome = nomeElemento.innerText;
-                dadosParaSalvar.push({ 
-                    data: dataCompleta, // Aqui garantimos o formato "DD/MM/AAAA"
-                    diaSemana, 
-                    nome 
-                });
+            if (container && textoNomeElement) {
+                const dataDataReal = container.getAttribute('data-data-real');
+                const nomeTexto = textoNomeElement.innerText.trim();
+                const diaTexto = linha.cells[1] ? linha.cells[1].innerText : "";
+
+                if (dataDataReal && nomeTexto && nomeTexto !== "---") {
+                    dadosParaSalvar.push({ 
+                        data: dataDataReal,
+                        diaSemana: diaTexto, 
+                        nome: nomeTexto
+                    });
+                }
             }
         });
 
+        if (dadosParaSalvar.length === 0) return alert("Não há nomes válidos para salvar.");
+
+        // "E. Sabatina" vira "E Sabatina"
+        const deptoParaSalvar = deptoLogado.replace(/\./g, "").trim(); 
+
         try {
-            await db.ref("escalas_salvas").child(deptoLogado).child(mesRef).set({
+            const escalaData = {
                 ultimaAtualizacao: new Date().toISOString(),
                 corpo: dadosParaSalvar
-            });
+            };
 
-            alert("✅ Escala salva com sucesso! O ano foi preservado para evitar conflitos futuros.");
-        } catch (error) {
-            console.error("Erro ao salvar:", error);
-            alert("Erro ao salvar escala.");
+            console.log("Tentando salvar em:", `escalas_salvas/${deptoParaSalvar}/${mesRef}`);
+
+            // Usamos await para esperar a resposta do servidor do Firebase
+            await db.ref("escalas_salvas/" + deptoParaSalvar + "/" + mesRef).set(escalaData);
+            
+            // Se chegou aqui, o Firebase confirmou o recebimento
+            console.log("✅ Firebase confirmou a gravação!");
+            alert("✅ Escala salva com sucesso no banco de dados!");
+            
+            try {
+                await baixarEscalaComoImagem();
+            } catch (errImg) {
+                console.error("Erro na imagem:", errImg);
+            }
+            
+            if (typeof revalidarTodosOsConflitos === "function") {
+                await revalidarTodosOsConflitos();
+            }
+            
+        } catch (error) { 
+            console.error("Erro real no Firebase:", error);
+            alert("Erro técnico ao salvar: " + error.message); 
+        }
+    }
+
+    // Função que varre a tabela após salvar para manter os alertas visuais ativos
+    async function revalidarTodosOsConflitos() {
+        const containers = document.querySelectorAll('.nome-container');
+        for (let container of containers) {
+            const nome = container.querySelector('.texto-nome').innerText;
+            const dataReal = container.getAttribute('data-data-real');
+            const conflitos = await verificarNovoConflito(nome, dataReal);
+            
+            const temAlerta = conflitos.length > 0;
+            container.setAttribute('data-conflitos', conflitos.join(', '));
+            
+            // Atualiza o visual sem precisar regerar a tabela toda
+            const spanNome = container.querySelector('.texto-nome');
+            spanNome.style.color = temAlerta ? '#e53e3e' : 'var(--iasd-blue)';
+            
+            // Adiciona ou remove a bolinha vermelha
+            let bolinha = container.querySelector('.alerta-conflito');
+            if (temAlerta && !bolinha) {
+                container.insertAdjacentHTML('afterbegin', '<span class="alerta-conflito"></span>');
+            } else if (!temAlerta && bolinha) {
+                bolinha.remove();
+            }
         }
     }
 
     async function carregarEscalaSalva() {
         const mesRef = document.getElementById('mesRef').value;
-        
         try {
             const snapshot = await db.ref("escalas_salvas").child(deptoLogado).child(mesRef).once("value");
             const dados = snapshot.val();
 
             if (dados && dados.corpo) {
                 let corpoTabela = "";
-                dados.corpo.forEach(item => {
-                    corpoTabela += `
-                        <tr>
-                            <td>${mostrarData ? `<strong>${item.data}</strong>` : ''}</td>
-                            <td style="color: #718096;">${mostrarData ? item.diaSemana : ''}</td>
-                            <td>
-                                <div class="nome-container" 
-                                    onclick="toggleMenu(event, this)" 
-                                    data-conflitos="" 
-                                    data-data-real="${item.data}"> <span class="texto-nome" style="font-weight: 600; color: var(--iasd-blue);">${item.nome}</span>
-                                </div>
-                                ...
-                            </td>
-                        </tr>`;
-                });
-                
-                document.getElementById('resultadoEscala').innerHTML = corpoTabela;
-                document.getElementById('cardResultado').style.display = 'block';
-                alert("📅 Escala salva encontrada e carregada!");
-            } else {
-                // Se não houver escala, apenas limpa para gerar uma nova
-                document.getElementById('cardResultado').style.display = 'none';
-            }
-        } catch (error) {
-            console.error("Erro ao carregar:", error);
-        }
-    }
+                // Como carregarEscalaSalva roda ao iniciar, precisamos buscar conflitos atuais
+                const snapGeral = await db.ref("escalas_salvas").once("value");
+                const todas = snapGeral.val() || {};
 
-    async function carregarEscalaSalva() {
-        const mesRef = document.getElementById('mesRef').value; // Pega o mês selecionado (ex: 2026-02)
-        
-        // Mostra um aviso visual de que está buscando
-        const tabela = document.getElementById('resultadoEscala');
-        tabela.innerHTML = "<tr><td colspan='3' style='text-align:center;'>Buscando escala no banco de dados...</td></tr>";
-        document.getElementById('cardResultado').style.display = 'block';
-
-        try {
-            // Caminho: escalas_salvas > Som > 2026-02
-            const snapshot = await db.ref("escalas_salvas").child(deptoLogado).child(mesRef).once("value");
-            const dados = snapshot.val();
-
-            if (dados && dados.corpo) {
-                let corpoTabela = "";
-                
-                // "item" aqui terá: data, diaSemana e nome (conforme seu Firebase)
                 dados.corpo.forEach((item, index) => {
-                    // Verificamos se é a primeira linha de uma data para não repetir o texto da data/dia (opcional)
                     const mostrarData = (index === 0 || dados.corpo[index-1].data !== item.data);
+                    
+                    // Verifica conflito em tempo real no carregamento
+                    let conflitos = [];
+                    Object.keys(todas).forEach(d => {
+                        if (d !== deptoLogado && todas[d][mesRef]) {
+                            if (todas[d][mesRef].corpo.some(i => i.data === item.data && i.nome === item.nome)) conflitos.push(d);
+                        }
+                    });
 
+                    const temAlerta = conflitos.length > 0;
                     corpoTabela += `
                         <tr>
-                            <td>${mostrarData ? `<strong>${item.data}</strong>` : ''}</td>
+                            <td>${mostrarData ? `<strong>${item.data.split('/')[0]}/${item.data.split('/')[1]}</strong>` : ''}</td>
                             <td style="color: #718096;">${mostrarData ? item.diaSemana : ''}</td>
                             <td>
-                                <div class="nome-container" onclick="toggleMenu(event, this)">
-                                    <span class="texto-nome" style="font-weight: 600; color: var(--iasd-blue);">${item.nome}</span>
+                                <div class="nome-container" onclick="toggleMenu(event, this)" 
+                                     data-conflitos="${conflitos.join(', ')}" data-data-real="${item.data}">
+                                    ${temAlerta ? '<span class="alerta-conflito"></span>' : ''}
+                                    <span class="texto-nome" style="font-weight: 600; color: ${temAlerta ? '#e53e3e' : 'var(--iasd-blue)'};">${item.nome}</span>
                                 </div>
                                 <div class="menu-contexto">
                                     <ul>
@@ -894,36 +878,159 @@
                             </td>
                         </tr>`;
                 });
-                
-                tabela.innerHTML = corpoTabela;
-                console.log("Escala carregada do Firebase!");
-            } else {
-                // Se não encontrar nada, esconde o card e avisa que pode gerar uma nova
-                document.getElementById('cardResultado').style.display = 'none';
-                console.log("Nenhuma escala salva encontrada para este mês.");
+                document.getElementById('resultadoEscala').innerHTML = corpoTabela;
+                document.getElementById('cardResultado').style.display = 'block';
             }
-        } catch (error) {
-            console.error("Erro ao carregar:", error);
-            alert("Erro ao carregar escala salva.");
+        } catch (e) { console.error(e); }
+    }
+
+    // --- MENU DE CONTEXTO E EDIÇÃO ---
+    function toggleMenu(event, elemento) {
+        event.stopPropagation();
+        document.querySelectorAll('.menu-contexto').forEach(m => m.style.display = 'none');
+        const menu = elemento.nextElementSibling;
+        const conflitos = elemento.getAttribute('data-conflitos');
+        
+        let areaAviso = menu.querySelector('.conflito-info') || document.createElement('div');
+        areaAviso.className = 'conflito-info';
+        if (!menu.querySelector('.conflito-info')) menu.prepend(areaAviso);
+
+        if (conflitos) {
+            areaAviso.innerHTML = `<strong>⚠️ Conflito</strong><br>Escalado em: ${conflitos}`;
+            areaAviso.style.display = 'block';
+        } else { areaAviso.style.display = 'none'; }
+
+        menu.style.display = 'block';
+        const fechar = () => { menu.style.display = 'none'; document.removeEventListener('click', fechar); };
+        document.addEventListener('click', fechar);
+    }
+
+    function ativarEdicao(itemMenu) {
+        const td = itemMenu.closest('td');
+        const container = td.querySelector('.nome-container');
+        const nomeAtual = container.querySelector('.texto-nome').innerText;
+        td.querySelector('.menu-contexto').style.display = 'none';
+
+        const idLista = "lista_" + Math.floor(Math.random() * 1000);
+        const opcoes = listaMembrosOficiais.map(n => `<option value="${n}">`).join('');
+
+        container.innerHTML = `
+            <div style="display: flex; gap: 5px; width: 100%;" onclick="event.stopPropagation()">
+                <input type="text" list="${idLista}" id="inputEdit" value="${nomeAtual}" 
+                    style="padding: 5px; border: 1px solid var(--iasd-gold); border-radius: 4px; width: 120px; font-size: 0.8rem;">
+                <datalist id="${idLista}">${opcoes}</datalist>
+                <button onclick="confirmarEdicao(this)" style="background: var(--iasd-blue); color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">OK</button>
+            </div>
+        `;
+        container.onclick = (e) => e.stopPropagation();
+    }
+
+    async function confirmarEdicao(botao) {
+        const novoNome = botao.parentElement.querySelector('#inputEdit').value;
+        const container = botao.closest('.nome-container');
+        const dataReal = container.getAttribute('data-data-real');
+        
+        if (novoNome.trim() !== "") {
+            const conflitos = await verificarNovoConflito(novoNome, dataReal);
+            const temAlerta = conflitos.length > 0;
+            container.setAttribute('data-conflitos', conflitos.join(', '));
+            container.innerHTML = `
+                ${temAlerta ? '<span class="alerta-conflito"></span>' : ''}
+                <span class="texto-nome" style="font-weight: 600; color: ${temAlerta ? '#e53e3e' : 'var(--iasd-blue)'};">${novoNome}</span>
+            `;
+            setTimeout(() => { container.onclick = (e) => toggleMenu(e, container); }, 100);
+        }
+    }
+
+    function excluirLinha(itemMenu) {
+        if(confirm("Remover este registro?")) {
+            itemMenu.closest('tr').remove();
         }
     }
 
     async function verificarNovoConflito(nome, dataReal) {
         const mesRef = document.getElementById('mesRef').value;
-        const snapshot = await db.ref("escalas_salvas").once("value");
-        const todasEscalas = snapshot.val() || {};
+        const snap = await db.ref("escalas_salvas").once("value");
+        const todas = snap.val() || {};
         let conflitos = [];
 
-        Object.keys(todasEscalas).forEach(depto => {
-            if (depto !== deptoLogado && todasEscalas[depto][mesRef]) {
-                const jaEscalado = todasEscalas[depto][mesRef].corpo.some(item => 
-                    item.data === dataReal && item.nome === nome
-                );
-                if (jaEscalado) conflitos.push(depto);
+        // Proteção para escala nova: Se não houver data de atualização, usamos o "agora"
+        let minhaAtualizacao = Date.now();
+        if (todas[deptoLogado] && todas[deptoLogado][mesRef] && todas[deptoLogado][mesRef].ultimaAtualizacao) {
+            minhaAtualizacao = new Date(todas[deptoLogado][mesRef].ultimaAtualizacao).getTime();
+        }
+
+        Object.keys(todas).forEach(depto => {
+            if (depto !== deptoLogado && todas[depto][mesRef]) {
+                // Se o outro departamento não tiver data (erro de dado), assumimos que ele é antigo (0)
+                const dataOutra = todas[depto][mesRef].ultimaAtualizacao;
+                const outraAtualizacao = dataOutra ? new Date(dataOutra).getTime() : 0;
+
+                // Só gera alerta se o outro departamento salvou ANTES de você
+                if (outraAtualizacao < minhaAtualizacao) { 
+                    const jaEscalado = todas[depto][mesRef].corpo?.some(i => i.data === dataReal && i.nome === nome);
+                    if (jaEscalado) conflitos.push(depto);
+                }
             }
         });
         return conflitos;
     }
+
+    async function baixarEscalaComoImagem() {
+        const mesRef = document.getElementById('mesRef').value;
+        const corpoOriginal = document.getElementById('resultadoEscala').innerHTML;
+        
+        // Define a imagem baseada no departamento logado
+        const nomeImagem = imagensDeptos[deptoLogado] || "sabatina.png"; // sabatina como padrão
+        const caminhoImagem = `IMG/${nomeImagem}`;
+
+        const exportArea = document.createElement('div');
+        exportArea.id = 'escala-export';
+        
+        // Aplica a imagem de fundo diretamente no estilo
+        exportArea.style.backgroundImage = `url('${caminhoImagem}')`;
+
+        exportArea.innerHTML = `
+            <div class="overlay-export">
+                <h2 style="text-align:center; color: #1a365d; margin-bottom: 5px;">ESCALA: ${deptoLogado.toUpperCase()}</h2>
+                <p style="text-align:center; color: #718096; margin-bottom: 20px;">Mês de Referência: ${mesRef}</p>
+                <table style="width:100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background-color: #1a365d; color: white;">
+                            <th style="padding: 10px; text-align: left;">Data</th>
+                            <th style="padding: 10px; text-align: left;">Dia</th>
+                            <th style="padding: 10px; text-align: left;">Escalado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${corpoOriginal}
+                    </tbody>
+                </table>
+                <div style="margin-top: 30px; text-align: center; border-top: 1px solid #ddd; padding-top: 10px;">
+                    <p style="font-size: 12px; color: #4a5568;">"Servi ao Senhor com alegria" - Salmos 100:2</p>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(exportArea);
+
+        // Pequeno delay para garantir que a imagem de fundo seja lida antes do "print"
+        setTimeout(() => {
+            html2canvas(exportArea, {
+                scale: 2,
+                useCORS: true, // Importante para carregar imagens locais/externas
+                allowTaint: true
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Escala_${deptoLogado}_${mesRef}.png`;
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+                document.body.removeChild(exportArea);
+            });
+        }, 500); 
+    }
+
+
 </script>
 </body>
 </html>
