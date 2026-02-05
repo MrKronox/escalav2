@@ -188,20 +188,32 @@
 </header>
 
 <div class="container">
-    <div class="status-card">
-        <h3 id="tituloProximoCulto">Próximo Culto</h3>
-        <div id="resumoEscala">Carregando informações...</div>
+    <div class="container">
+    <div class="status-card" style="border-left: 5px solid var(--iasd-gold);">
+        <h3 style="margin: 0 0 10px; font-size: 0.85rem;">📊 PROGRESSO DE FEVEREIRO</h3>
+        <div style="background: #edf2f7; border-radius: 20px; height: 15px; overflow: hidden; display: flex;">
+            <div id="barraProgresso" style="background: var(--iasd-blue); width: 0%; transition: 1s ease-in-out;"></div>
+        </div>
+        <p id="txtProgresso" style="font-size: 0.7rem; color: #718096; margin: 8px 0 0;">Calculando escalas concluídas...</p>
     </div>
+
+
+    <div style="font-size: 0.75rem; font-weight: 800; margin: 25px 0 12px; color: #718096; letter-spacing: 1px; text-transform: uppercase;">
+        Status das Escalas
+    </div>
+    <div id="termometroDeptos" style="background: white; border-radius: 15px; padding: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+        </div>
+</div>
 
     <div style="font-size: 0.75rem; font-weight: 800; margin-bottom: 12px; color: #718096; letter-spacing: 1px; text-transform: uppercase;">
         Departamentos
     </div>
 
     <div class="menu-grid">
-        <a href="membros.html?depto=Som" class="menu-card">
+        <a href="membros.html?depto=Técnico de Som" class="menu-card">
             <div class="menu-content">
                 <span class="menu-icon">🔊</span>
-                <span class="menu-text">Som</span>
+                <span class="menu-text">Téc. de som</span>
             </div>
             <span class="menu-arrow">→</span>
         </a>
@@ -238,7 +250,7 @@
             <span class="menu-arrow">→</span>
         </a>
 
-        <a href="membros.html?depto=E. Sabatina" class="menu-card">
+        <a href="membros.html?depto=Escola Sabatina" class="menu-card">
             <div class="menu-content">
                 <span class="menu-icon">📖</span>
                 <span class="menu-text">E. Sabatina</span>
@@ -292,26 +304,23 @@
 </div>
 
 <script>
-    function atualizarVisaoCulto() {
-        const agora = new Date();
-        const dia = agora.getDay(); 
-        const hora = agora.getHours();
-        let proximo = "";
-        
-        if (dia === 6 && hora >= 12) proximo = "Domingo";
-        else if (dia === 0 && hora < 20) proximo = "Domingo";
-        else if ((dia === 0 && hora >= 20) || dia === 1 || dia === 2 || (dia === 3 && hora < 21)) proximo = "Quarta-feira";
-        else proximo = "Sábado";
+    // 1. Configuração e Inicialização do Firebase
+    const firebaseConfig = {
+        apiKey: "AIzaSyBYtUnqsokLE1RnK1TGbswbnsLXPpvvdc0",
+        authDomain: "escala7igreja.firebaseapp.com",
+        databaseURL: "https://escala7igreja-default-rtdb.firebaseio.com",
+        projectId: "escala7igreja",
+        storageBucket: "escala7igreja.firebasestorage.app",
+        messagingSenderId: "778312493987",
+        appId: "1:778312493987:web:2851b2fc65331e4ac14816"
+    };
 
-        document.getElementById('tituloProximoCulto').innerText = `Escala de ${proximo}`;
-        
-        document.getElementById('resumoEscala').innerHTML = `
-            <div class="scale-mini-row"><span>Som:</span> <strong>Alexandre</strong></div>
-            <div class="scale-mini-row"><span>Louvor:</span> <strong>Marluce</strong></div>
-            <div class="scale-mini-row"><span>Recepção:</span> <strong>Betinha</strong></div>
-        `;
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
     }
+    const db = firebase.database();
 
+    // 2. Funções de Interface do Modal
     function abrirModalLouvor() {
         document.getElementById('modalLouvor').style.display = 'flex';
     }
@@ -320,7 +329,60 @@
         document.getElementById('modalLouvor').style.display = 'none';
     }
 
-    atualizarVisaoCulto();
+    // 3. Função Principal: Atualiza Barra de Progresso, Termômetro e Mural
+    async function atualizarPainelAdministrativo() {
+        console.log("Conectando ao Firebase...");
+        
+        // Define o mês atual dinamicamente (Formato: YYYY-MM)
+        const agora = new Date();
+        const mesAtual = `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, '0')}`;
+        
+        try {
+            const snapEscalas = await db.ref("escalas_salvas").once('value');
+            const escalas = snapEscalas.val() || {};
+            
+            // Departamentos para monitorar
+            const listaDeptos = ["Técnico de Som", "Louvor Congregacional", "Louvor Especial", 
+            "Infantil", "Recepção", "Mídia", "Diáconos","Escola Sabatina", "Limpeza",
+            "Mídia"];
+            let concluidos = 0;
+            let htmlTermometro = "";
+
+            listaDeptos.forEach(depto => {
+                // Verifica se existe escala salva para o mês atual
+                const estaPronta = escalas[depto] && escalas[depto][mesAtual];
+                if (estaPronta) concluidos++;
+
+                htmlTermometro += `
+                    <div style="display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #f1f5f9; align-items: center;">
+                        <span style="font-size: 0.9rem; font-weight: 600;">${depto}</span>
+                        <span style="font-size: 0.8rem;">
+                            ${estaPronta ? '✅ <span style="color:green">Concluída</span>' : '⚠️ <span style="color:#e53e3e">Pendente</span>'}
+                        </span>
+                    </div>`;
+            });
+
+            // Atualiza Interface de Progresso
+            document.getElementById('termometroDeptos').innerHTML = htmlTermometro;
+            const porcentagem = (concluidos / listaDeptos.length) * 100;
+            document.getElementById('barraProgresso').style.width = porcentagem + "%";
+            document.getElementById('txtProgresso').innerText = `${concluidos} de ${listaDeptos.length} escalas concluídas em ${mesAtual}`;
+
+            // 4. Carregar Mural de Avisos
+            db.ref("mural_adm").once('value', snap => {
+                if(snap.val()) document.getElementById('muralAvisos').value = snap.val();
+            });
+
+        } catch (error) {
+            console.error("Erro ao carregar dados:", error);
+        }
+    }
+
+    
+
+    // Inicia tudo ao carregar a janela
+    window.onload = atualizarPainelAdministrativo;
+
 </script>
 </body>
 </html>
