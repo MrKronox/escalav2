@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super ADM - Gestão de Base Global</title>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <style>
+        :root { --admin-red: #800000; --iasd-blue: #003366; --iasd-gold: #c5a059; }
+        body { font-family: 'Poppins', sans-serif; background: #f0f2f5; margin: 0; color: #2d3748; }
+        header { background: var(--admin-red); color: white; padding: 25px; text-align: center; border-bottom: 5px solid var(--iasd-gold); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .container { max-width: 900px; margin: 20px auto; padding: 15px; }
+        .card { background: white; border-radius: 15px; padding: 25px; margin-bottom: 25px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        h2 { color: var(--iasd-blue); margin-top: 0; display: flex; align-items: center; gap: 10px; font-size: 1.3rem; }
+        .form-group { margin-bottom: 15px; display: flex; flex-direction: column; }
+        label { font-weight: 600; margin-bottom: 6px; font-size: 0.85rem; color: #4a5568; }
+        input, select { padding: 12px; border: 2px solid #edf2f7; border-radius: 10px; font-size: 1rem; transition: 0.3s; }
+        input:focus { border-color: var(--iasd-blue); outline: none; }
+        .btn-action { background: var(--iasd-blue); color: white; border: none; padding: 14px; border-radius: 10px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; }
+        .btn-action:hover { opacity: 0.9; transform: translateY(-2px); }
+        
+        /* Tabela Estilizada */
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { background: #f8fafc; text-align: left; padding: 15px; color: #718096; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
+        td { padding: 15px; border-bottom: 1px solid #edf2f7; font-size: 0.95rem; }
+        .search-box { margin-bottom: 15px; width: 100%; box-sizing: border-box; padding: 12px; border: 2px solid #edf2f7; border-radius: 10px; }
+
+        /* Estilo para lista de cargos no cadastro de acessos */
+        .depto-list-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px; background: #f8fafc; border-radius: 8px; margin-bottom: 8px;
+            border-left: 4px solid var(--iasd-gold);
+        }
+        .btn-delete-small {
+            background: #e53e3e; color: white; border: none; padding: 5px 10px;
+            border-radius: 5px; cursor: pointer; font-size: 0.7rem;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>SUPER ADMINISTRADOR</h1>
+    <p>Gestão da Base de Dados de Membros e Acessos</p>
+</header>
+
+<div class="container">
+    
+    <div class="card">
+        <h2>🔑 Configurar Acessos e Liderança</h2>
+        <p style="font-size: 0.8rem; color: #718096; margin-bottom: 15px;">Selecione o departamento para editar ou criar um novo acesso.</p>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div class="form-group">
+                <label>Departamento</label>
+                <select id="selDeptoConfig" onchange="carregarConfigDepto()">
+                    <option value="Técnico de Som">Técnico de Som</option>
+                    <option value="Mídia">Mídia</option>
+                    <option value="Louvor">Louvor</option>
+                    <option value="Diáconos">Diáconos</option>
+                    <option value="Escola Sabatina">Escola Sabatina</option>
+                    <option value="Infantil">Infantil</option>
+                    <option value="Recepção">Recepção</option>
+                    <option value="Limpeza">Limpeza</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Senha de Acesso</label>
+                <input type="text" id="passDepto" placeholder="Defina a senha">
+            </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div class="form-group">
+                <label>Líder Responsável</label>
+                <input type="text" id="nomeLider" list="listaMembrosSugestao" placeholder="Nome do Líder">
+            </div>
+            <div class="form-group">
+                <label>Vice-Líder</label>
+                <input type="text" id="nomeViceLider" list="listaMembrosSugestao" placeholder="Nome do Vice">
+            </div>
+        </div>
+
+        <datalist id="listaMembrosSugestao"></datalist>
+
+        <button class="btn-action" onclick="salvarConfiguracoes()" style="margin-top: 15px;">Atualizar Liderança e Senha</button>
+        
+        <hr style="margin: 25px 0; border: 0; border-top: 1px solid #edf2f7;">
+        
+        <h3>Cargos Ativos no Sistema</h3>
+        <div id="listaDeptosAtivos">
+            </div>
+    </div>
+
+    <div class="card">
+        <h2>👤 Adicionar à Base Mestra</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div class="form-group">
+                <label>Nome Completo (Registro)</label>
+                <input type="text" id="novoMembroNome" placeholder="Ex: João Silva...">
+            </div>
+            <div class="form-group">
+                <label>Apelido / Nome de Exibição</label>
+                <input type="text" id="novoMembroApelido" placeholder="Ex: João">
+            </div>
+        </div>
+        <button class="btn-action" style="background: #2d3748;" onclick="cadastrarMembroMestra()">Adicionar Membro</button>
+    </div>
+
+    <div class="card">
+        <h2>📋 Base de Dados Global de Membros</h2>
+        <input type="text" id="inputBusca" class="search-box" placeholder="🔍 Buscar membro na base..." onkeyup="filtrarTabela()">
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nome do Membro</th>
+                        <th>Status</th>
+                        <th>Ação</th>
+                    </tr>
+                </thead>
+                <tbody id="listaMembrosMestra"></tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyBYtUnqsokLE1RnK1TGbswbnsLXPpvvdc0",
+        authDomain: "escala7igreja.firebaseapp.com",
+        databaseURL: "https://escala7igreja-default-rtdb.firebaseio.com",
+        projectId: "escala7igreja",
+        storageBucket: "escala7igreja.firebasestorage.app",
+        messagingSenderId: "778312493987",
+        appId: "1:778312493987:web:2851b2fc65331e4ac14816"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // 1. Cadastrar Membro na Base Mestra
+    async function cadastrarMembroMestra() {
+        const nomeCompleto = document.getElementById('novoMembroNome').value.trim();
+        const nomeExibicao = document.getElementById('novoMembroApelido').value.trim();
+
+        if(!nomeCompleto || !nomeExibicao) return alert("Preencha o nome completo e o apelido.");
+
+        try {
+            await db.ref("membros").push({
+                nomeCompleto: nomeCompleto,
+                nomeExibicao: nomeExibicao,
+                dataCadastro: new Date().toLocaleDateString('pt-BR')
+            });
+            document.getElementById('novoMembroNome').value = "";
+            document.getElementById('novoMembroApelido').value = "";
+            alert("Membro cadastrado com sucesso!");
+        } catch (e) { alert("Erro ao cadastrar: " + e.message); }
+    }
+
+    // 2. Carregar Dados e Listar Departamentos Ativos
+    // 2. Carregar Tudo e Listar Cargos para Limpeza (Atualizado com Vice-Líder)
+    function carregarDados() {
+        db.ref("configuracoes/departamentos").on('value', snapDepto => {
+            const configs = snapDepto.val() || {};
+            
+            // Renderiza a lista de limpeza de cargos
+            let htmlDeptosAtivos = "";
+            Object.keys(configs).forEach(deptoNome => {
+                const d = configs[deptoNome];
+                const viceExibicao = (d.viceLider && d.viceLider !== "Não definido") ? d.viceLider : "Nenhum";
+
+                htmlDeptosAtivos += `
+                    <div class="depto-list-item">
+                        <div>
+                            <strong>${deptoNome}</strong><br>
+                            <small>Líder: ${d.liderResponsavel}</small><br>
+                            <small>Vice: ${viceExibicao}</small>
+                        </div>
+                        <button class="btn-delete-small" onclick="removerConfigDepto('${deptoNome}')">🗑️ Remover</button>
+                    </div>`;
+            });
+            document.getElementById('listaDeptosAtivos').innerHTML = htmlDeptosAtivos || "<p>Nenhum cargo configurado.</p>";
+
+            // Renderiza a tabela de membros (Mantém a lógica anterior)
+            db.ref("membros").on('value', snapMembros => {
+                let htmlTabela = "";
+                let htmlSugestao = "";
+                const membros = snapMembros.val();
+                
+                if (membros) {
+                    Object.keys(membros).forEach(key => {
+                        const m = membros[key];
+                        const nomeComp = m.nomeCompleto || "Sem Nome";
+                        
+                        let cargos = [];
+                        Object.keys(configs).forEach(dNome => {
+                            if(configs[dNome].liderResponsavel === nomeComp) cargos.push(`⭐ Líder: ${dNome}`);
+                            if(configs[dNome].viceLider === nomeComp) cargos.push(`🥈 Vice: ${dNome}`);
+                        });
+
+                        const labelCargos = cargos.length > 0 
+                            ? `<div style="margin-top:5px;">${cargos.map(c => `<span style="background:#fff3cd; color:#856404; font-size:0.7rem; padding:2px 6px; border-radius:4px; margin-right:5px; border:1px solid #ffeeba;">${c}</span>`).join('')}</div>` 
+                            : "";
+
+                        htmlTabela += `
+                            <tr>
+                                <td>
+                                    <strong>${nomeComp}</strong><br>
+                                    <small style="color: #718096;">Apelido: ${m.nomeExibicao || "-"}</small>
+                                    ${labelCargos}
+                                </td>
+                                <td><span style="color:#2ecc71; font-size:0.8rem">● Ativo</span></td>
+                                <td>
+                                    <button onclick="removerMembro('${key}')" style="color:#e53e3e; border:none; background:none; cursor:pointer; font-weight:bold;">🗑 Excluir</button>
+                                </td>
+                            </tr>`;
+                        htmlSugestao += `<option value="${nomeComp}">${m.nomeExibicao}</option>`;
+                    });
+                }
+                document.getElementById('listaMembrosMestra').innerHTML = htmlTabela;
+                document.getElementById('listaMembrosSugestao').innerHTML = htmlSugestao;
+            });
+        });
+    }
+
+    // 3. Salvar/Atualizar
+    async function salvarConfiguracoes() {
+        const depto = document.getElementById('selDeptoConfig').value;
+        const senha = document.getElementById('passDepto').value;
+        const lider = document.getElementById('nomeLider').value;
+        const vice = document.getElementById('nomeViceLider').value;
+
+        if(!senha || !lider) return alert("A senha e o Líder são obrigatórios.");
+
+        await db.ref(`configuracoes/departamentos/${depto}`).set({
+            senha: senha,
+            liderResponsavel: lider,
+            viceLider: vice || "Não definido"
+        });
+        alert(`Liderança de ${depto} atualizada com sucesso!`);
+    }
+
+    // 4. Remover Cargo/Departamento Acumulado
+    async function removerConfigDepto(nomeDepto) {
+        if(confirm(`Deseja remover o acesso do departamento "${nomeDepto}"? \n\nIsso removerá a senha e o cargo do nome do líder, mas NÃO apagará os membros ou escalas.`)) {
+            try {
+                await db.ref(`configuracoes/departamentos/${nomeDepto}`).remove();
+                alert("Acesso removido!");
+            } catch (e) { alert("Erro: " + e.message); }
+        }
+    }
+
+    // 5. Remover Membro da Base
+    async function removerMembro(id) {
+        if (confirm("Deseja realmente remover este membro da base global?")) {
+            await db.ref(`membros/${id}`).remove();
+            alert("Membro removido!");
+        }
+    }
+
+    function filtrarTabela() {
+        const busca = document.getElementById('inputBusca').value.toLowerCase();
+        const linhas = document.querySelectorAll('#listaMembrosMestra tr');
+        linhas.forEach(linha => {
+            const nome = linha.querySelector('td').innerText.toLowerCase();
+            linha.style.display = nome.includes(busca) ? "" : "none";
+        });
+    }
+
+    function carregarConfigDepto() {
+        const depto = document.getElementById('selDeptoConfig').value;
+        db.ref(`configuracoes/departamentos/${depto}`).once('value', snap => {
+            const d = snap.val();
+            document.getElementById('passDepto').value = d ? d.senha : "";
+            document.getElementById('nomeLider').value = d ? d.liderResponsavel : "";
+            document.getElementById('nomeViceLider').value = (d && d.viceLider !== "Não definido") ? d.viceLider : "";
+        });
+    }
+
+    window.onload = () => { carregarDados(); carregarConfigDepto(); };
+</script>
+</body>
+</html>
