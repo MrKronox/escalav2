@@ -21,6 +21,27 @@
         padding-bottom: 30px; 
         color: var(--text-dark);
     }
+
+    /* ESTILO DO LOGIN - ADICIONADO */
+    #loginOverlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: var(--iasd-blue); z-index: 9999;
+        display: flex; align-items: center; justify-content: center; color: white;
+    }
+    .login-box {
+        background: white; padding: 30px; border-radius: 20px;
+        width: 90%; max-width: 350px; color: var(--text-dark);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        border-bottom: 5px solid var(--iasd-gold);
+    }
+    .login-box input {
+        width: 100%; padding: 12px; margin: 10px 0;
+        border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box;
+    }
+    .btn-login {
+        width: 100%; padding: 12px; background: var(--iasd-blue);
+        color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
+    }
     
     header { 
         background: var(--iasd-blue); 
@@ -36,7 +57,7 @@
 
     .container { padding: 12px; max-width: 500px; margin: auto; }
 
-    /* Card de Status (Próximo Culto) */
+    /* Card de Status */
     .status-card { 
         background: white; 
         padding: 20px; 
@@ -52,35 +73,32 @@
         text-transform: uppercase; 
         letter-spacing: 1px;
     }
-    .scale-mini-row { display: flex; justify-content: space-between; font-size: 0.85rem; padding: 6px 0; border-bottom: 1px dashed #eee; }
 
-    /* Lista de Departamentos - ESTILO BRUTALISTA */
+    /* Grid de Departamentos */
     .menu-grid { 
         display: grid;
         grid-template-columns: repeat(2, 1fr);
-        flex-direction: column; 
-        gap: 11px; }
+        gap: 11px; 
+    }
 
     .menu-card { 
-        background: white; /* Fundo branco para leveza */
+        background: white;
         text-decoration: none; 
         display: flex; 
-        flex-direction: column; /* Ícone em cima, texto embaixo */
+        flex-direction: column; 
         justify-content: center; 
         align-items: center; 
         padding: 5px 2px; 
-        border-radius: 12px; /* Mais arredondado = mais amigável */
-        border: 1px solid #edf2f7; /* Borda fina e discreta */
-        /* Sombra suave em vez de sólida para não ficar "pesado" */
+        border-radius: 12px; 
+        border: 1px solid #edf2f7; 
         box-shadow: 0 2px 5px rgba(0, 51, 102, 0.08); 
         transition: all 0.2s ease-out; 
         position: relative;
         overflow: hidden;
         cursor: pointer;
-        min-height: 90px; /* Garante que todos tenham o mesmo tamanho */
+        min-height: 90px;
     }
 
-    /* Efeito de Brilho no Hover */
     .menu-card::before {
         content: "";
         position: absolute;
@@ -108,14 +126,14 @@
 
     .menu-content { 
         display: flex; 
-        flex-direction: column; /* Alinha ícone e texto verticalmente */
+        flex-direction: column; 
         align-items: center; 
         gap: 12px; 
         z-index: 2;
     }
 
     .menu-icon { 
-        font-size: 2.2rem; /* Ícone maior e centralizado */
+        font-size: 2.2rem; 
         filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
     }
 
@@ -123,23 +141,12 @@
 
     .menu-text { 
         font-weight: bold; 
-        color: #fff; 
+        color: var(--iasd-blue); 
         text-transform: uppercase; 
         letter-spacing: 1px; 
         font-size: 0.9rem; 
     }
-    
-    /* Ajuste para o texto não sumir quando clicar */
-    .menu-card:active {
-        transform: scale(0.95);
-        background-color: #f8fafc;
-    }
-    
-    .menu-text { color: var(--iasd-blue); }
 
-    .menu-arrow { display: none }
-
-    /* Botão de Consulta Geral */
     .btn-iasd { 
         display: block; 
         width: 100%; 
@@ -181,101 +188,106 @@
 </head>
 <body>
 
+<div id="loginOverlay">
+    <div class="login-box">
+        <h2 style="text-align:center; color: var(--iasd-blue); margin-top:0">Acesso ao Painel</h2>
+        <label style="font-size: 0.8rem; font-weight: bold;">Seu Nome (Líder/Vice)</label>
+        <input type="text" id="loginNome" placeholder="Ex: João Silva" list="listaMembrosSugestao">
+        <datalist id="listaMembrosSugestao"></datalist>
+        
+        <label style="font-size: 0.8rem; font-weight: bold;">Senha do Departamento</label>
+        <input type="password" id="loginSenha" placeholder="••••••••">
+        
+        <button class="btn-login" onclick="executarLogin()">Entrar</button>
+        <p id="loginErro" style="color:red; font-size:0.7rem; text-align:center; display:none; margin-top:10px;">Credenciais incorretas!</p>
+    </div>
+</div>
+
 <header>
     <p>IGREJA ADVENTISTA DO SÉTIMO DIA</p>
     <h1 id="headerTitle">SISTEMA DE GESTÃO DE ESCALAS</h1>
-    <br>Painel Administrativo
+    <div id="subTitle" style="font-size: 0.8rem; margin-top: 10px;">Painel Administrativo</div>
+    <button onclick="logout()" style="background:none; border:none; color:var(--iasd-gold); cursor:pointer; font-size:0.7rem; margin-top:10px;">[ Sair ]</button>
 </header>
 
-<div class="container">
-    <div class="container">
-    <div class="status-card" style="border-left: 5px solid var(--iasd-gold);">
-        <h3 style="margin: 0 0 10px; font-size: 0.85rem;">📊 PROGRESSO DE FEVEREIRO</h3>
+<div class="container" id="mainContent" style="display:none;">
+    <div class="status-card">
+        <h3 id="tituloMesProgresso">📊 PROGRESSO DAS ESCALAS</h3>
         <div style="background: #edf2f7; border-radius: 20px; height: 15px; overflow: hidden; display: flex;">
             <div id="barraProgresso" style="background: var(--iasd-blue); width: 0%; transition: 1s ease-in-out;"></div>
         </div>
         <p id="txtProgresso" style="font-size: 0.7rem; color: #718096; margin: 8px 0 0;">Calculando escalas concluídas...</p>
     </div>
 
-
     <div style="font-size: 0.75rem; font-weight: 800; margin: 25px 0 12px; color: #718096; letter-spacing: 1px; text-transform: uppercase;">
-        Status das Escalas
+        Status das Escalas (Mês Atual)
     </div>
-    <div id="termometroDeptos" style="background: white; border-radius: 15px; padding: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-        </div>
-</div>
+    <div id="termometroDeptos" style="background: white; border-radius: 15px; padding: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px;">
+    </div>
 
     <div style="font-size: 0.75rem; font-weight: 800; margin-bottom: 12px; color: #718096; letter-spacing: 1px; text-transform: uppercase;">
-        Departamentos
+        Meus Departamentos
     </div>
 
-    <div class="menu-grid">
-        <a href="membros.html?depto=Técnico de Som" class="menu-card">
+    <div class="menu-grid" id="gridDepartamentos">
+        <a href="membros.html?depto=Técnico de Som" class="menu-card" data-depto="Técnico de Som">
             <div class="menu-content">
                 <span class="menu-icon">🔊</span>
                 <span class="menu-text">Téc. de som</span>
             </div>
-            <span class="menu-arrow">→</span>
         </a>
 
-        <div class="menu-card" onclick="abrirModalLouvor()">
+        <div class="menu-card" onclick="abrirModalLouvor()" data-depto="Louvor">
             <div class="menu-content">
                 <span class="menu-icon">🎶</span>
                 <span class="menu-text">Louvor</span>
             </div>
-            <span class="menu-arrow">→</span>
         </div>
 
-        <a href="membros.html?depto=Infantil" class="menu-card">
+        <a href="membros.html?depto=Infantil" class="menu-card" data-depto="Infantil">
             <div class="menu-content">
                 <span class="menu-icon">🎨</span>
                 <span class="menu-text">Infantil</span>
             </div>
-            <span class="menu-arrow">→</span>
         </a>
 
-        <a href="membros.html?depto=Recepção" class="menu-card">
+        <a href="membros.html?depto=Recepção" class="menu-card" data-depto="Recepção">
             <div class="menu-content">
                 <span class="menu-icon">🤝</span>
                 <span class="menu-text">Recepção</span>
             </div>
-            <span class="menu-arrow">→</span>
         </a>
 
-        <a href="membros.html?depto=Diáconos" class="menu-card">
+        <a href="membros.html?depto=Diáconos" class="menu-card" data-depto="Diáconos">
             <div class="menu-content">
                 <span class="menu-icon">🛡️</span>
                 <span class="menu-text">Diáconos</span>
             </div>
-            <span class="menu-arrow">→</span>
         </a>
 
-        <a href="membros.html?depto=Escola Sabatina" class="menu-card">
+        <a href="membros.html?depto=Escola Sabatina" class="menu-card" data-depto="Escola Sabatina">
             <div class="menu-content">
                 <span class="menu-icon">📖</span>
                 <span class="menu-text">E. Sabatina</span>
             </div>
-            <span class="menu-arrow">→</span>
         </a>
 
-        <a href="membros.html?depto=Limpeza" class="menu-card">
+        <a href="membros.html?depto=Limpeza" class="menu-card" data-depto="Limpeza">
             <div class="menu-content">
                 <span class="menu-icon">🧹</span>
                 <span class="menu-text">Limpeza</span>
             </div>
-            <span class="menu-arrow">→</span>
         </a>
 
-        <a href="membros.html?depto=Mídia" class="menu-card">
+        <a href="membros.html?depto=Mídia" class="menu-card" data-depto="Mídia">
             <div class="menu-content">
                 <span class="menu-icon">💻</span>
                 <span class="menu-text">Mídia</span>
             </div>
-            <span class="menu-arrow">→</span>
         </a>
     </div>
 
-    <a href="consulta.html" class="btn-iasd" style="background: white; color: var(--iasd-blue); border: 2px solid var(--iasd-blue); margin-top: 25px; display: block; text-decoration: none; text-align: center; padding: 15px; border-radius: 12px; font-weight: bold;">
+    <a href="consulta.html" class="btn-iasd">
         🔍 Consultar Todas as Escalas
     </a>
 </div>
@@ -283,28 +295,23 @@
 <div id="modalLouvor" class="modal-overlay" onclick="fecharModal()">
     <div class="modal-content" onclick="event.stopPropagation()" style="border-radius: 20px; padding: 30px;">
         <h3 style="color: var(--iasd-blue); margin-top: 0; text-align: center; border-bottom: 2px solid var(--iasd-gold); padding-bottom: 10px;">Equipe de Louvor</h3>
-        
         <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
             <a href="membros.html?depto=Louvor Congregacional" class="menu-card" style="border: 1px solid #eee;">
                 <div class="menu-content">
-                    <span>🎤</span>
-                    <span class="menu-text">Congregacional</span>
+                    <span>🎤</span><span class="menu-text">Congregacional</span>
                 </div>
             </a>
             <a href="membros.html?depto=Louvor Especial" class="menu-card" style="border: 1px solid #eee;">
                 <div class="menu-content">
-                    <span>🎻</span>
-                    <span class="menu-text">Especial</span>
+                    <span>🎻</span><span class="menu-text">Especial</span>
                 </div>
             </a>
         </div>
-
-        <button onclick="fecharModal()" style="background:none; border:none; color:#718096; margin-top:20px; width:100%; cursor:pointer; font-size: 0.9rem;">Fechar</button>
+        <button onclick="fecharModal()" style="background:none; border:none; color:#718096; margin-top:20px; width:100%; cursor:pointer;">Fechar</button>
     </div>
 </div>
 
 <script>
-    // 1. Configuração e Inicialização do Firebase
     const firebaseConfig = {
         apiKey: "AIzaSyBYtUnqsokLE1RnK1TGbswbnsLXPpvvdc0",
         authDomain: "escala7igreja.firebaseapp.com",
@@ -315,74 +322,108 @@
         appId: "1:778312493987:web:2851b2fc65331e4ac14816"
     };
 
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 2. Funções de Interface do Modal
-    function abrirModalLouvor() {
-        document.getElementById('modalLouvor').style.display = 'flex';
+    // LÓGICA DE LOGIN
+    async function executarLogin() {
+        const nome = document.getElementById('loginNome').value.trim();
+        const senha = document.getElementById('loginSenha').value;
+        const erroMsg = document.getElementById('loginErro');
+
+        try {
+            const snap = await db.ref("configuracoes/departamentos").once('value');
+            const departamentos = snap.val();
+            let acessos = [];
+
+            for (let d in departamentos) {
+                if ((departamentos[d].liderResponsavel === nome || departamentos[d].viceLider === nome) && departamentos[d].senha === senha) {
+                    acessos.push(d);
+                }
+            }
+
+            if (acessos.length > 0) {
+                const sessao = { nome, departamentos: acessos };
+                localStorage.setItem("sessao_adm", JSON.stringify(sessao));
+                carregarInterfaceProtegida(sessao);
+            } else {
+                erroMsg.style.display = "block";
+            }
+        } catch (e) { console.error(e); }
     }
 
-    function fecharModal() {
-        document.getElementById('modalLouvor').style.display = 'none';
-    }
-
-    // 3. Função Principal: Atualiza Barra de Progresso, Termômetro e Mural
-    async function atualizarPainelAdministrativo() {
-        console.log("Conectando ao Firebase...");
+    function carregarInterfaceProtegida(sessao) {
+        document.getElementById('loginOverlay').style.display = 'none';
+        document.getElementById('mainContent').style.display = 'block';
+        document.getElementById('headerTitle').innerText = `Olá, ${sessao.nome.split(' ')[0]}`;
         
-        // Define o mês atual dinamicamente (Formato: YYYY-MM)
+        // Filtrar cards
+        const cards = document.querySelectorAll('.menu-card[data-depto]');
+        cards.forEach(card => {
+            const deptoCard = card.getAttribute('data-depto');
+            // Verifica se o depto do card está na lista de acessos do líder
+            const temAcesso = sessao.departamentos.some(d => d.includes(deptoCard) || deptoCard.includes(d));
+            card.style.display = temAcesso ? "flex" : "none";
+        });
+
+        atualizarPainelAdministrativo();
+    }
+
+    function logout() {
+        localStorage.removeItem("sessao_adm");
+        location.reload();
+    }
+
+    // MODAIS
+    function abrirModalLouvor() { document.getElementById('modalLouvor').style.display = 'flex'; }
+    function fecharModal() { document.getElementById('modalLouvor').style.display = 'none'; }
+
+    // PAINEL DE DADOS
+    async function atualizarPainelAdministrativo() {
         const agora = new Date();
         const mesAtual = `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, '0')}`;
-        
+        const mesesNomes = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+        document.getElementById('tituloMesProgresso').innerText = `📊 PROGRESSO DE ${mesesNomes[agora.getMonth()].toUpperCase()}`;
+
         try {
             const snapEscalas = await db.ref("escalas_salvas").once('value');
             const escalas = snapEscalas.val() || {};
+            const listaDeptos = ["Técnico de Som", "Louvor Congregacional", "Louvor Especial", "Infantil", "Recepção", "Mídia", "Diáconos", "Escola Sabatina", "Limpeza"];
             
-            // Departamentos para monitorar
-            const listaDeptos = ["Técnico de Som", "Louvor Congregacional", "Louvor Especial", 
-            "Infantil", "Recepção", "Mídia", "Diáconos","Escola Sabatina", "Limpeza",
-            "Mídia"];
             let concluidos = 0;
             let htmlTermometro = "";
 
             listaDeptos.forEach(depto => {
-                // Verifica se existe escala salva para o mês atual
                 const estaPronta = escalas[depto] && escalas[depto][mesAtual];
                 if (estaPronta) concluidos++;
 
                 htmlTermometro += `
                     <div style="display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #f1f5f9; align-items: center;">
-                        <span style="font-size: 0.9rem; font-weight: 600;">${depto}</span>
-                        <span style="font-size: 0.8rem;">
-                            ${estaPronta ? '✅ <span style="color:green">Concluída</span>' : '⚠️ <span style="color:#e53e3e">Pendente</span>'}
-                        </span>
+                        <span style="font-size: 0.85rem; font-weight: 600;">${depto}</span>
+                        <span style="font-size: 0.75rem;">${estaPronta ? '✅ <span style="color:green">OK</span>' : '⚠️ <span style="color:#e53e3e">Pendente</span>'}</span>
                     </div>`;
             });
 
-            // Atualiza Interface de Progresso
             document.getElementById('termometroDeptos').innerHTML = htmlTermometro;
             const porcentagem = (concluidos / listaDeptos.length) * 100;
             document.getElementById('barraProgresso').style.width = porcentagem + "%";
-            document.getElementById('txtProgresso').innerText = `${concluidos} de ${listaDeptos.length} escalas concluídas em ${mesAtual}`;
-
-            // 4. Carregar Mural de Avisos
-            db.ref("mural_adm").once('value', snap => {
-                if(snap.val()) document.getElementById('muralAvisos').value = snap.val();
-            });
-
-        } catch (error) {
-            console.error("Erro ao carregar dados:", error);
-        }
+            document.getElementById('txtProgresso').innerText = `${concluidos} de ${listaDeptos.length} escalas concluídas`;
+        } catch (error) { console.error(error); }
     }
 
-    
+    // AUTO-COMPLETE E VERIFICAÇÃO INICIAL
+    window.onload = () => {
+        // Carrega sugestões de nomes
+        db.ref("membros").once('value', snap => {
+            let html = "";
+            snap.forEach(m => { html += `<option value="${m.val().nomeCompleto}">`; });
+            document.getElementById('listaMembrosSugestao').innerHTML = html;
+        });
 
-    // Inicia tudo ao carregar a janela
-    window.onload = atualizarPainelAdministrativo;
-
+        // Verifica se já está logado
+        const salva = localStorage.getItem("sessao_adm");
+        if (salva) carregarInterfaceProtegida(JSON.parse(salva));
+    };
 </script>
 </body>
 </html>
