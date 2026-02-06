@@ -9,33 +9,79 @@
     <style>
         :root { --admin-red: #800000; --iasd-blue: #003366; --iasd-gold: #c5a059; }
         body { font-family: 'Poppins', sans-serif; background: #f0f2f5; margin: 0; color: #2d3748; }
-        header { background: var(--admin-red); color: white; padding: 25px; text-align: center; border-bottom: 5px solid var(--iasd-gold); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .container { max-width: 900px; margin: 20px auto; padding: 15px; }
-        .card { background: white; border-radius: 15px; padding: 25px; margin-bottom: 25px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
-        h2 { color: var(--iasd-blue); margin-top: 0; display: flex; align-items: center; gap: 10px; font-size: 1.3rem; }
-        .form-group { margin-bottom: 15px; display: flex; flex-direction: column; }
+        
+        header { 
+            background: var(--admin-red); color: white; padding: 25px 15px; 
+            text-align: center; border-bottom: 5px solid var(--iasd-gold); 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+        }
+        header h1 { font-size: 1.5rem; margin: 0; }
+        header p { font-size: 0.9rem; margin-top: 5px; }
+
+        .container { max-width: 900px; margin: 10px auto; padding: 10px; box-sizing: border-box; }
+        
+        .card { 
+            background: white; border-radius: 15px; padding: 20px; 
+            margin-bottom: 20px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); 
+        }
+
+        h2 { color: var(--iasd-blue); margin-top: 0; display: flex; align-items: center; gap: 10px; font-size: 1.2rem; }
+        h3 { font-size: 1rem; color: var(--iasd-blue); }
+
+        /* AJUSTE MOBILE: Grids que empilham no celular */
+        .responsive-grid {
+            display: grid;
+            grid-template-columns: 1fr; /* Uma coluna por padrão (celular) */
+            gap: 15px;
+        }
+
+        /* Se a tela for maior que 600px, usa duas colunas */
+        @media (min-width: 600px) {
+            .responsive-grid { grid-template-columns: 1fr 1fr; }
+            header h1 { font-size: 2rem; }
+        }
+
+        .form-group { margin-bottom: 10px; display: flex; flex-direction: column; }
         label { font-weight: 600; margin-bottom: 6px; font-size: 0.85rem; color: #4a5568; }
-        input, select { padding: 12px; border: 2px solid #edf2f7; border-radius: 10px; font-size: 1rem; transition: 0.3s; }
+        
+        input, select { 
+            padding: 12px; border: 2px solid #edf2f7; border-radius: 10px; 
+            font-size: 1rem; transition: 0.3s; width: 100%; box-sizing: border-box;
+        }
+        
         input:focus { border-color: var(--iasd-blue); outline: none; }
-        .btn-action { background: var(--iasd-blue); color: white; border: none; padding: 14px; border-radius: 10px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; }
+        
+        .btn-action { 
+            background: var(--iasd-blue); color: white; border: none; padding: 14px; 
+            border-radius: 10px; cursor: pointer; font-weight: bold; width: 100%; 
+            transition: 0.3s; font-size: 1rem;
+        }
         .btn-action:hover { opacity: 0.9; transform: translateY(-2px); }
         
-        /* Tabela Estilizada */
-        .table-container { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th { background: #f8fafc; text-align: left; padding: 15px; color: #718096; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
-        td { padding: 15px; border-bottom: 1px solid #edf2f7; font-size: 0.95rem; }
+        /* Tabela Estilizada com Scroll Mobile */
+        .table-container { 
+            overflow-x: auto; 
+            margin-top: 10px;
+            -webkit-overflow-scrolling: touch; /* Scroll suave no iOS */
+        }
+        
+        table { width: 100%; border-collapse: collapse; min-width: 500px; } /* Mantém largura mínima para não esmagar dados */
+        th { background: #f8fafc; text-align: left; padding: 12px; color: #718096; font-size: 0.75rem; text-transform: uppercase; }
+        td { padding: 12px; border-bottom: 1px solid #edf2f7; font-size: 0.9rem; vertical-align: middle; }
+        
         .search-box { margin-bottom: 15px; width: 100%; box-sizing: border-box; padding: 12px; border: 2px solid #edf2f7; border-radius: 10px; }
 
-        /* Estilo para lista de cargos no cadastro de acessos */
+        /* Estilo para lista de cargos */
         .depto-list-item {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 10px; background: #f8fafc; border-radius: 8px; margin-bottom: 8px;
+            padding: 12px; background: #f8fafc; border-radius: 8px; margin-bottom: 8px;
             border-left: 4px solid var(--iasd-gold);
         }
+        .depto-info { flex-grow: 1; }
         .btn-delete-small {
-            background: #e53e3e; color: white; border: none; padding: 5px 10px;
-            border-radius: 5px; cursor: pointer; font-size: 0.7rem;
+            background: #e53e3e; color: white; border: none; padding: 8px 12px;
+            border-radius: 5px; cursor: pointer; font-size: 0.75rem; font-weight: bold;
+            margin-left: 10px;
         }
     </style>
 </head>
@@ -52,7 +98,7 @@
         <h2>🔑 Configurar Acessos e Liderança</h2>
         <p style="font-size: 0.8rem; color: #718096; margin-bottom: 15px;">Selecione o departamento para editar ou criar um novo acesso.</p>
         
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div class="responsive-grid">
             <div class="form-group">
                 <label>Departamento</label>
                 <select id="selDeptoConfig" onchange="carregarConfigDepto()">
@@ -71,7 +117,8 @@
                 <input type="text" id="passDepto" placeholder="Defina a senha">
             </div>
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        
+        <div class="responsive-grid">
             <div class="form-group">
                 <label>Líder Responsável</label>
                 <input type="text" id="nomeLider" list="listaMembrosSugestao" placeholder="Nome do Líder">
@@ -82,20 +129,17 @@
             </div>
         </div>
 
-        <datalist id="listaMembrosSugestao"></datalist>
-
         <button class="btn-action" onclick="salvarConfiguracoes()" style="margin-top: 15px;">Atualizar Liderança e Senha</button>
         
         <hr style="margin: 25px 0; border: 0; border-top: 1px solid #edf2f7;">
         
         <h3>Cargos Ativos no Sistema</h3>
-        <div id="listaDeptosAtivos">
-            </div>
+        <div id="listaDeptosAtivos"></div>
     </div>
 
     <div class="card">
         <h2>👤 Adicionar à Base Mestra</h2>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div class="responsive-grid">
             <div class="form-group">
                 <label>Nome Completo (Registro)</label>
                 <input type="text" id="novoMembroNome" placeholder="Ex: João Silva...">
@@ -105,7 +149,7 @@
                 <input type="text" id="novoMembroApelido" placeholder="Ex: João">
             </div>
         </div>
-        <button class="btn-action" style="background: #2d3748;" onclick="cadastrarMembroMestra()">Adicionar Membro</button>
+        <button class="btn-action" style="background: #2d3748; margin-top: 10px;" onclick="cadastrarMembroMestra()">Adicionar Membro</button>
     </div>
 
     <div class="card">
@@ -127,6 +171,8 @@
 
 </div>
 
+<datalist id="listaMembrosSugestao"></datalist>
+
 <script>
     const firebaseConfig = {
         apiKey: "AIzaSyBYtUnqsokLE1RnK1TGbswbnsLXPpvvdc0",
@@ -140,11 +186,9 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 1. Cadastrar Membro na Base Mestra
     async function cadastrarMembroMestra() {
         const nomeCompleto = document.getElementById('novoMembroNome').value.trim();
         const nomeExibicao = document.getElementById('novoMembroApelido').value.trim();
-
         if(!nomeCompleto || !nomeExibicao) return alert("Preencha o nome completo e o apelido.");
 
         try {
@@ -159,13 +203,9 @@
         } catch (e) { alert("Erro ao cadastrar: " + e.message); }
     }
 
-    // 2. Carregar Dados e Listar Departamentos Ativos
-    // 2. Carregar Tudo e Listar Cargos para Limpeza (Atualizado com Vice-Líder)
     function carregarDados() {
         db.ref("configuracoes/departamentos").on('value', snapDepto => {
             const configs = snapDepto.val() || {};
-            
-            // Renderiza a lista de limpeza de cargos
             let htmlDeptosAtivos = "";
             Object.keys(configs).forEach(deptoNome => {
                 const d = configs[deptoNome];
@@ -173,7 +213,7 @@
 
                 htmlDeptosAtivos += `
                     <div class="depto-list-item">
-                        <div>
+                        <div class="depto-info">
                             <strong>${deptoNome}</strong><br>
                             <small>Líder: ${d.liderResponsavel}</small><br>
                             <small>Vice: ${viceExibicao}</small>
@@ -183,7 +223,6 @@
             });
             document.getElementById('listaDeptosAtivos').innerHTML = htmlDeptosAtivos || "<p>Nenhum cargo configurado.</p>";
 
-            // Renderiza a tabela de membros (Mantém a lógica anterior)
             db.ref("membros").on('value', snapMembros => {
                 let htmlTabela = "";
                 let htmlSugestao = "";
@@ -193,7 +232,6 @@
                     Object.keys(membros).forEach(key => {
                         const m = membros[key];
                         const nomeComp = m.nomeCompleto || "Sem Nome";
-                        
                         let cargos = [];
                         Object.keys(configs).forEach(dNome => {
                             if(configs[dNome].liderResponsavel === nomeComp) cargos.push(`⭐ Líder: ${dNome}`);
@@ -225,26 +263,21 @@
         });
     }
 
-    // 3. Salvar/Atualizar
     async function salvarConfiguracoes() {
         const depto = document.getElementById('selDeptoConfig').value;
         const senha = document.getElementById('passDepto').value;
         const lider = document.getElementById('nomeLider').value;
         const vice = document.getElementById('nomeViceLider').value;
-
         if(!senha || !lider) return alert("A senha e o Líder são obrigatórios.");
 
         await db.ref(`configuracoes/departamentos/${depto}`).set({
-            senha: senha,
-            liderResponsavel: lider,
-            viceLider: vice || "Não definido"
+            senha: senha, liderResponsavel: lider, viceLider: vice || "Não definido"
         });
         alert(`Liderança de ${depto} atualizada com sucesso!`);
     }
 
-    // 4. Remover Cargo/Departamento Acumulado
     async function removerConfigDepto(nomeDepto) {
-        if(confirm(`Deseja remover o acesso do departamento "${nomeDepto}"? \n\nIsso removerá a senha e o cargo do nome do líder, mas NÃO apagará os membros ou escalas.`)) {
+        if(confirm(`Deseja remover o acesso do departamento "${nomeDepto}"?`)) {
             try {
                 await db.ref(`configuracoes/departamentos/${nomeDepto}`).remove();
                 alert("Acesso removido!");
@@ -252,11 +285,9 @@
         }
     }
 
-    // 5. Remover Membro da Base
     async function removerMembro(id) {
         if (confirm("Deseja realmente remover este membro da base global?")) {
             await db.ref(`membros/${id}`).remove();
-            alert("Membro removido!");
         }
     }
 
