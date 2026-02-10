@@ -1,0 +1,16 @@
+{
+  "name": "Sistema de Escalas IASD",
+  "short_name": "Escalas",
+  "description": "Gestão de Escalas e Membros",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f0f2f5",
+  "theme_color": "#800000",
+  "icons": [
+    {
+      "src": "icone-app.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
