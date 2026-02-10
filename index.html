@@ -40,7 +40,7 @@
         color: var(--text-dark);
     }
 
-    /* ESTILO DO LOGIN - ADICIONADO */
+    /* ESTILO DO LOGIN */
     #loginOverlay {
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
         background: var(--iasd-blue); z-index: 9999;
@@ -61,6 +61,15 @@
         color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
     }
     
+    /* BOTÃO DE CONSULTA NO LOGIN */
+    .btn-consulta-externa {
+        width: 100%; padding: 12px; background: transparent;
+        color: var(--iasd-blue); border: 2px solid var(--iasd-blue); 
+        border-radius: 8px; font-weight: bold; cursor: pointer;
+        margin-top: 5px; transition: 0.3s;
+    }
+    .btn-consulta-externa:hover { background: #f0f4f8; }
+
     header { 
         background: var(--iasd-blue); 
         color: white; 
@@ -75,7 +84,6 @@
 
     .container { padding: 12px; max-width: 500px; margin: auto; }
 
-    /* Card de Status */
     .status-card { 
         background: white; 
         padding: 20px; 
@@ -92,7 +100,6 @@
         letter-spacing: 1px;
     }
 
-    /* Grid de Departamentos */
     .menu-grid { 
         display: grid;
         grid-template-columns: repeat(2, 1fr);
@@ -216,7 +223,18 @@
         <label style="font-size: 0.8rem; font-weight: bold;">Senha do Departamento</label>
         <input type="password" id="loginSenha" placeholder="••••••••">
         
-        <button class="btn-login" onclick="executarLogin()">Entrar</button>
+        <button class="btn-login" onclick="executarLogin()">Entrar como Líder</button>
+
+        <div style="margin: 20px 0; display: flex; align-items: center; text-align: center; color: #718096; font-size: 0.7rem;">
+            <div style="flex: 1; height: 1px; background: #edf2f7;"></div>
+            <span style="margin: 0 10px;">OU SE FOR MEMBRO</span>
+            <div style="flex: 1; height: 1px; background: #edf2f7;"></div>
+        </div>
+
+        <button class="btn-consulta-externa" onclick="window.location.href='consulta.html'">
+            🔎 Consultar Escalas
+        </button>
+
         <p id="loginErro" style="color:red; font-size:0.7rem; text-align:center; display:none; margin-top:10px;">Credenciais incorretas!</p>
     </div>
 </div>
@@ -375,11 +393,9 @@
         document.getElementById('mainContent').style.display = 'block';
         document.getElementById('headerTitle').innerText = `Olá, ${sessao.nome.split(' ')[0]}`;
         
-        // Filtrar cards
         const cards = document.querySelectorAll('.menu-card[data-depto]');
         cards.forEach(card => {
             const deptoCard = card.getAttribute('data-depto');
-            // Verifica se o depto do card está na lista de acessos do líder
             const temAcesso = sessao.departamentos.some(d => d.includes(deptoCard) || deptoCard.includes(d));
             card.style.display = temAcesso ? "flex" : "none";
         });
@@ -392,11 +408,9 @@
         location.reload();
     }
 
-    // MODAIS
     function abrirModalLouvor() { document.getElementById('modalLouvor').style.display = 'flex'; }
     function fecharModal() { document.getElementById('modalLouvor').style.display = 'none'; }
 
-    // PAINEL DE DADOS
     async function atualizarPainelAdministrativo() {
         const agora = new Date();
         const mesAtual = `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, '0')}`;
@@ -429,16 +443,13 @@
         } catch (error) { console.error(error); }
     }
 
-    // AUTO-COMPLETE E VERIFICAÇÃO INICIAL
     window.onload = () => {
-        // Carrega sugestões de nomes
         db.ref("membros").once('value', snap => {
             let html = "";
             snap.forEach(m => { html += `<option value="${m.val().nomeCompleto}">`; });
             document.getElementById('listaMembrosSugestao').innerHTML = html;
         });
 
-        // Verifica se já está logado
         const salva = localStorage.getItem("sessao_adm");
         if (salva) carregarInterfaceProtegida(JSON.parse(salva));
     };
