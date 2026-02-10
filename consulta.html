@@ -106,6 +106,54 @@
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
             margin: 0 auto 15px; font-size: 1.5rem;
         }
+
+
+        /* Botão Voltar Estilizado */
+        .btn-voltar-container {
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+
+        .button-back {
+            background-color: transparent;
+            color: var(--iasd-blue);
+            width: 8.5em;
+            height: 2.9em;
+            border: var(--iasd-blue) 0.15em solid; /* Borda um pouco mais fina para elegância */
+            border-radius: 11px;
+            text-align: right;
+            transition: all 0.5s ease;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            cursor: pointer;
+            font-weight: 600;
+            padding: 0;
+        }
+
+        .button-back:hover {
+            background-color: var(--iasd-blue);
+            color: #fff;
+        }
+
+        .button-back svg {
+            width: 1.4em;
+            left: 0.8em;
+            position: absolute;
+            transition: all 0.5s ease;
+            /* Invertendo a seta para apontar para a esquerda */
+            transform: rotate(180deg); 
+        }
+
+        .button-back:hover svg {
+            transform: rotate(180deg) translateX(5px);
+            stroke: #fff;
+        }
+
+        .button-back .text {
+            margin: 0 1.2em;
+        }
     </style>
 </head>
 <body>
@@ -115,7 +163,18 @@
     <h1 style="margin: 8px 0 0; font-size: 1.4rem; letter-spacing: 1px;">PORTAL DE ESCALAS</h1>
 </header>
 
+
+
 <div class="container">
+    <div class="btn-voltar-container">
+            <button class="button-back" onclick="window.location.href='index.html'" style="width: 8em;">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="transform: rotate(0deg);">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                </svg>
+                <span class="text">Home</span>
+            </button>
+        </div>
+        
     <div class="card-proximo">
         <h2 id="tituloCard">Próximo Culto</h2>
         <div id="listaProximo">Carregando informações...</div>
