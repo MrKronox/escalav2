@@ -248,48 +248,78 @@
         const lista = document.getElementById('listaProximo');
         lista.innerHTML = "";
         
-        let mapa = {};
+        // Objeto para verificar conflitos (se a mesma pessoa está em mais de um depto)
+        let mapaConflitos = {}; 
+
+        // 1. Primeiro passo: Mapear quem está escalado em quê para detectar conflitos
         for (let depto in escalasCache) {
             for (let mes in escalasCache[depto]) {
-                const item = (escalasCache[depto][mes].corpo || []).find(i => i.data === dataRef);
-                if (item) {
-                    if (!mapa[item.nome]) mapa[item.nome] = [];
-                    mapa[item.nome].push(depto);
-                    
-                    // Invertido: Depto Esquerda, Nome Direita
-                    lista.innerHTML += `
-                        <div class="linha-escala">
-                            <span class="depto-txt">${depto}:</span>
-                            <span class="pessoa-txt" onclick="abrirPopup('${item.nome}', '${dataRef}', '${mapa[item.nome].join(',')}')">
-                                ${mapa[item.nome].length > 1 ? '⚠️ ' : ''}${item.nome}
-                            </span>
-                        </div>`;
-                }
+                const itensDoDia = (escalasCache[depto][mes].corpo || []).filter(i => i.data === dataRef);
+                itensDoDia.forEach(item => {
+                    if (!mapaConflitos[item.nome]) mapaConflitos[item.nome] = [];
+                    mapaConflitos[item.nome].push(depto);
+                });
             }
+        }
+
+        // 2. Segundo passo: Renderizar a lista por Departamento (mostrando todos os nomes)
+        for (let depto in escalasCache) {
+            let nomesNoDepto = [];
+
+            for (let mes in escalasCache[depto]) {
+                // Filtramos TODOS os nomes daquele depto naquela data (usando .filter em vez de .find)
+                const itensEncontrados = (escalasCache[depto][mes].corpo || []).filter(i => i.data === dataRef);
+                
+                itensEncontrados.forEach(item => {
+                    const conflitos = mapaConflitos[item.nome] || [];
+                    const temConflito = conflitos.length > 1;
+                    
+                    // Criamos o HTML do nome com o alerta se houver conflito
+                    const htmlNome = `
+                        <span class="pessoa-txt" onclick="abrirPopup('${item.nome}', '${dataRef}', '${conflitos.join(',')}')">
+                            ${temConflito ? '⚠️ ' : ''}${item.nome}
+                        </span>`;
+                    nomesNoDepto.push(htmlNome);
+                });
+            }
+
+            // Se houver alguém escalado nesse departamento, adiciona na lista
+            if (nomesNoDepto.length > 0) {
+                lista.innerHTML += `
+                    <div class="linha-escala">
+                        <span class="depto-txt">${depto}:</span>
+                        <div style="text-align: right; display: flex; flex-direction: column; gap: 4px;">
+                            ${nomesNoDepto.join("")}
+                        </div>
+                    </div>`;
+            }
+        }
+
+        if (lista.innerHTML === "") {
+            lista.innerHTML = "<p style='font-size:0.8rem; color:#94a3b8; text-align:center;'>Nenhuma escala programada para hoje.</p>";
         }
     }
 
     function realizarBusca() {
-        const nome = document.getElementById('filtroNome').value.toLowerCase().trim();
-        const dataInput = document.getElementById('filtroData').value;
-        const resultDiv = document.getElementById('resultadosBusca');
-        
-        // Limpa os resultados anteriores antes de uma nova busca
-        resultDiv.innerHTML = "";
+    const nomeFiltro = document.getElementById('filtroNome').value.toLowerCase().trim();
+    const dataInput = document.getElementById('filtroData').value;
+    const resultDiv = document.getElementById('resultadosBusca');
+    
+    resultDiv.innerHTML = "";
 
-        if (!nome && !dataInput) return;
+    if (!nomeFiltro && !dataInput) return;
 
-        if (dataInput) {
-            // PESQUISA POR DATA: Mostra a equipe completa do dia selecionado
-            const dataBR = dataInput.split('-').reverse().join('/');
-            resultDiv.innerHTML = `<h4 style="font-size:0.8rem; color:#64748b; margin:20px 0 10px; text-transform:uppercase;">Equipe de ${dataBR}:</h4>`;
-            renderizarEquipeData(dataBR);
-        } else if (nome) {
-            // PESQUISA POR NOME: Mostra o histórico do voluntário
-            resultDiv.innerHTML = `<h4 style="font-size:0.8rem; color:#64748b; margin:20px 0 10px; text-transform:uppercase;">Escalas de "${nome}":</h4>`;
-            buscarHistoricoNome(nome);
-        }
+    if (dataInput) {
+        // Se tem DATA, vamos renderizar a equipe do dia, 
+        // mas passaremos o nomeFiltro para filtrar lá dentro se necessário.
+        const dataBR = dataInput.split('-').reverse().join('/');
+        renderizarEquipeData(dataBR, nomeFiltro);
+    } else if (nomeFiltro) {
+        // Se só tem NOME, busca o histórico geral
+        resultDiv.innerHTML = `<h4 style="font-size:0.8rem; color:#64748b; margin:20px 0 10px; text-transform:uppercase;">Histórico de "${nomeFiltro}":</h4>`;
+        buscarHistoricoNome(nomeFiltro);
     }
+}
 
     function abrirPopup(nome, data, deptosStr) {
         const lista = deptosStr.split(',');
@@ -303,68 +333,114 @@
         document.getElementById('modalDetalhes').style.display = 'flex';
     }
 
-    function renderizarEquipeData(dataRef) {
-        const resultDiv = document.getElementById('resultadosBusca');
-        let mapaDia = {};
+    function renderizarEquipeData(dataRef, nomeFiltro = "") {
+    const resultDiv = document.getElementById('resultadosBusca');
+    let mapaDia = {}; 
+    let deptoEquipe = {}; 
 
-        // Agrupa todos os departamentos para aquela data específica
-        for (let depto in escalasCache) {
-            for (let mes in escalasCache[depto]) {
-                const item = (escalasCache[depto][mes].corpo || []).find(i => i.data === dataRef);
-                if (item) {
-                    if (!mapaDia[item.nome]) mapaDia[item.nome] = [];
-                    mapaDia[item.nome].push(depto);
-                }
-            }
+    // Título da busca
+    let titulo = `Equipe de ${dataRef}`;
+    if (nomeFiltro) titulo += ` (Filtrando por: ${nomeFiltro})`;
+    resultDiv.innerHTML = `<h4 style="font-size:0.8rem; color:#64748b; margin:20px 0 10px; text-transform:uppercase;">${titulo}:</h4>`;
+
+    // 1. Mapear dados
+    for (let depto in escalasCache) {
+        for (let mes in escalasCache[depto]) {
+            const itensEncontrados = (escalasCache[depto][mes].corpo || []).filter(i => i.data === dataRef);
+            
+            itensEncontrados.forEach(item => {
+                // Se o usuário digitou um nome, só adicionamos se o nome bater com o filtro
+                if (nomeFiltro && !item.nome.toLowerCase().includes(nomeFiltro)) return;
+
+                if (!deptoEquipe[depto]) deptoEquipe[depto] = [];
+                deptoEquipe[depto].push(item.nome);
+
+                if (!mapaDia[item.nome]) mapaDia[item.nome] = [];
+                mapaDia[item.nome].push(depto);
+            });
         }
+    }
 
-        // Renderiza cada pessoa encontrada na parte de baixo
-        for (let voluntario in mapaDia) {
-            const deptos = mapaDia[voluntario];
-            const temConflito = deptos.length > 1;
+    // 2. Renderizar os resultados
+    for (let depto in deptoEquipe) {
+        deptoEquipe[depto].forEach(voluntario => {
+            const deptosOndeEsta = mapaDia[voluntario];
+            const temConflito = deptosOndeEsta.length > 1;
             
             resultDiv.innerHTML += `
-                <div class="result-item">
-                    <div class="nome-click" onclick="abrirPopup('${voluntario}', '${dataRef}', '${deptos.join(',')}')">
+                <div class="result-item" onclick="abrirPopup('${voluntario}', '${dataRef}', '${deptosOndeEsta.join(',')}')" style="cursor:pointer;">
+                    <div class="nome-click">
                         <span class="depto-tag" style="margin-left:0; margin-right:10px;">${temConflito ? '⚠️' : '📍'}</span>
                         <strong>${voluntario}</strong>
                     </div>
-                    <span class="btn-ver" onclick="abrirPopup('${voluntario}', '${dataRef}', '${deptos.join(',')}')">
-                        ${temConflito ? 'VER CONFLITO' : deptos[0]}
+                    <span class="btn-ver" style="text-align:right; font-size:0.75rem;">
+                        ${depto.toUpperCase()}
                     </span>
                 </div>`;
-        }
-        
-        if (Object.keys(mapaDia).length === 0) {
-            resultDiv.innerHTML += "<p style='font-size:0.8rem; color:#94a3b8;'>Nenhuma escala para esta data.</p>";
-        }
+        });
     }
+    
+    if (Object.keys(deptoEquipe).length === 0) {
+        resultDiv.innerHTML += "<p style='font-size:0.8rem; color:#94a3b8;'>Nenhum resultado encontrado para esta combinação.</p>";
+    }
+}
 
     function buscarHistoricoNome(nome) {
-        const resultDiv = document.getElementById('resultadosBusca');
-        let encontrou = false;
+    const resultDiv = document.getElementById('resultadosBusca');
+    let todasAsEscalas = [];
 
-        for (let depto in escalasCache) {
-            for (let mes in escalasCache[depto]) {
-                (escalasCache[depto][mes].corpo || []).forEach(item => {
-                    if (item.nome.toLowerCase().includes(nome)) {
-                        encontrou = true;
-                        // Exibe a data curta (DD/MM) conforme solicitado
-                        const dataCurta = item.data.substring(0, 5);
-                        resultDiv.innerHTML += `
-                            <div class="result-item">
-                                <div>
-                                    <span class="data-tag">${dataCurta}</span>
-                                    <span class="depto-tag">${depto}</span>
-                                </div>
-                                <span class="btn-ver" onclick="abrirPopup('${item.nome}', '${item.data}', '${depto}')">Ver Detalhes</span>
-                            </div>`;
-                    }
-                });
-            }
+    // 1. Coleta todos os registros onde o nome aparece
+    for (let depto in escalasCache) {
+        for (let mes in escalasCache[depto]) {
+            (escalasCache[depto][mes].corpo || []).forEach(item => {
+                if (item.nome.toLowerCase().includes(nome)) {
+                    todasAsEscalas.push({
+                        data: item.data, // formato DD/MM/AAAA
+                        depto: depto,
+                        nomeOriginal: item.nome
+                    });
+                }
+            });
         }
-        if (!encontrou) resultDiv.innerHTML = "<p style='font-size:0.8rem; color:#94a3b8;'>Nenhum registro encontrado.</p>";
     }
+
+    // 2. Lógica de ordenação (Transforma a data em algo comparável pelo JS)
+    todasAsEscalas.sort((a, b) => {
+        const dataA = a.data.split('/').reverse().join(''); // Vira AAAAMMDD
+        const dataB = b.data.split('/').reverse().join('');
+        return dataA.localeCompare(dataB);
+    });
+
+    // 3. Renderiza os resultados já ordenados
+    if (todasAsEscalas.length > 0) {
+        todasAsEscalas.forEach(item => {
+            const dataCurta = item.data.substring(0, 5); // Exibe apenas DD/MM
+            
+            // Aqui buscamos todos os deptos desse voluntário nessa data específica para o popup de conflito
+            let deptosNoDia = [];
+            for (let d in escalasCache) {
+                for (let m in escalasCache[d]) {
+                    if ((escalasCache[d][m].corpo || []).some(i => i.data === item.data && i.nome === item.nomeOriginal)) {
+                        deptosNoDia.push(d);
+                    }
+                }
+            }
+
+            const temConflito = deptosNoDia.length > 1;
+
+            resultDiv.innerHTML += `
+                <div class="result-item" onclick="abrirPopup('${item.nomeOriginal}', '${item.data}', '${deptosNoDia.join(',')}')" style="cursor:pointer;">
+                    <div>
+                        <span class="data-tag">${dataCurta}</span>
+                        <span class="depto-tag">${temConflito ? '⚠️ ' : ''}${item.depto}</span>
+                    </div>
+                    <span class="btn-ver">VER DETALHES</span>
+                </div>`;
+        });
+    } else {
+        resultDiv.innerHTML = "<p style='font-size:0.8rem; color:#94a3b8;'>Nenhum registro encontrado.</p>";
+    }
+}
 
     window.onload = iniciar;
 </script>
