@@ -315,10 +315,10 @@
             </div>
         </a>
 
-        <a href="membros.html?depto=Mídia" class="menu-card" data-depto="Mídia">
+        <a href="membros.html?depto=Pregação" class="menu-card" data-depto="Pregação">
             <div class="menu-content">
-                <span class="menu-icon">💻</span>
-                <span class="menu-text">Mídia</span>
+                <span class="menu-icon">📢</span>
+                <span class="menu-text">Pregação</span>
             </div>
         </a>
     </div>
@@ -420,7 +420,7 @@
         try {
             const snapEscalas = await db.ref("escalas_salvas").once('value');
             const escalas = snapEscalas.val() || {};
-            const listaDeptos = ["Técnico de Som", "Louvor Congregacional", "Louvor Especial", "Infantil", "Recepção", "Mídia", "Diáconos", "Escola Sabatina", "Limpeza"];
+            const listaDeptos = ["Técnico de Som", "Louvor Congregacional", "Louvor Especial", "Infantil", "Recepção", "Pregação", "Diáconos", "Escola Sabatina", "Limpeza"];
             
             let concluidos = 0;
             let htmlTermometro = "";
