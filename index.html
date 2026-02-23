@@ -361,7 +361,7 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // LÓGICA DE LOGIN
+    // LÓGICA DE LOGIN (CORRIGIDA PARA MÚLTIPLOS DEPARTAMENTOS)
     async function executarLogin() {
         const nome = document.getElementById('loginNome').value.trim();
         const senha = document.getElementById('loginSenha').value;
@@ -370,14 +370,30 @@
         try {
             const snap = await db.ref("configuracoes/departamentos").once('value');
             const departamentos = snap.val();
+            
+            let senhaConfirmada = false;
             let acessos = [];
 
+            // 1. Verifica se a senha bate com pelo menos UM dos departamentos deste líder
             for (let d in departamentos) {
-                if ((departamentos[d].liderResponsavel === nome || departamentos[d].viceLider === nome) && departamentos[d].senha === senha) {
-                    acessos.push(d);
+                const depto = departamentos[d];
+                if ((depto.liderResponsavel === nome || depto.viceLider === nome) && depto.senha === senha) {
+                    senhaConfirmada = true;
+                    break; 
                 }
             }
 
+            // 2. Se a senha confere, buscamos TODOS os departamentos associados a este nome
+            if (senhaConfirmada) {
+                for (let d in departamentos) {
+                    const depto = departamentos[d];
+                    if (depto.liderResponsavel === nome || depto.viceLider === nome) {
+                        acessos.push(d);
+                    }
+                }
+            }
+
+            // 3. Executa o login se encontrou acessos
             if (acessos.length > 0) {
                 const sessao = { nome, departamentos: acessos };
                 localStorage.setItem("sessao_adm", JSON.stringify(sessao));
@@ -385,7 +401,10 @@
             } else {
                 erroMsg.style.display = "block";
             }
-        } catch (e) { console.error(e); }
+        } catch (e) { 
+            console.error(e); 
+            alert("Erro ao acessar base de dados.");
+        }
     }
 
     function carregarInterfaceProtegida(sessao) {
